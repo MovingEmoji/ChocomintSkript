@@ -7,6 +7,17 @@ on load:
 on unload:
 	broadcast "{@prefix} &cUnloaded ScoreboardAPI"
 
+function lineCount(s: text) :: text:
+	set {_c} to length of {_s}
+	set {_s} to ""
+	if {_c} > 12:
+		set {_c} to 12
+	if {_c} < 4:
+		set {_c} to 4
+	loop {_c} times:
+		set {_s} to "%{_s}%-"
+	return {_s}
+
 function calcWin(p: player) :: text:
 	set {_uuid} to uuid of {_p}
 	set {_kit} to {nutil.player.%{_uuid}%::play}
@@ -55,6 +66,7 @@ function refreshScoreboard(p: player):
 				set {_opponent} to {nutil.match.team2::%{_matchnumber}%::1}
 			else:
 				set {_opponent} to {nutil.match.team1::%{_matchnumber}%::1}
+			set {_line} to lineCount("%{_opponent}%")
 			set {_duration} to {nutil.match.duration::%{_matchnumber}%}
 			set {_minute} to rounded down {_duration} / 60
 			set {_second} to mod({_duration},60)
@@ -69,7 +81,7 @@ function refreshScoreboard(p: player):
 			if {nutil.player.%{_uuid}%::play} is "Boxing":
 				set {_matchnumber} to {nutil.player.%{_uuid}%::matchnumber}
 				set {_ouuid} to uuid of {_opponent}
-				set {_p}'s sidebar "&1&7&m----------" to "&7&m----------" at line 8
+				set {_p}'s sidebar "&1&7&m----------" to "&7&m%{_line}%" at line 8
 				set {_p}'s sidebar "&2Opponent&7: &f" to "%{_opponent}%" at line 7
 				set {_p}'s sidebar "&2Duration&7: &f" to "%{_duration}%" at line 6
 				set {_p}'s sidebar "&2" to "" at line 5
@@ -77,18 +89,18 @@ function refreshScoreboard(p: player):
 				set {_p}'s sidebar "&cTheirHits&7: " to "&f%{nutil.match.hit::%{_matchnumber}%::%{nutil.player.%{_ouuid}%::team}%}% hits" at line 3
 				set {_p}'s sidebar "&1" to "" at line 2
 				set {_p}'s sidebar "&achocomint.cc" to "" at line 1
-				set {_p}'s sidebar "&7&m----------" to "&7&m----------" at line 0
+				set {_p}'s sidebar "&7&m----------" to "&7&m%{_line}%" at line 0
 			else:
 				set {_kit} to  {nutil.player.%{_uuid}%::play}
 				if {nutil.kit.round::%{_kit}%} is 1:
-					set {_p}'s sidebar "&1&7&m----------" to "&7&m----------" at line 5
+					set {_p}'s sidebar "&1&7&m----------" to "&7&m%{_line}%" at line 5
 					set {_p}'s sidebar "&2Opponent&7: &f" to "%{_opponent}%" at line 4
 					set {_p}'s sidebar "&2Duration&7: &f" to "%{_duration}%" at line 3
 					set {_p}'s sidebar "&1" to "" at line 2
 					set {_p}'s sidebar "&achocomint.cc" to "" at line 1
-					set {_p}'s sidebar "&7&m----------" to "&7&m----------" at line 0
+					set {_p}'s sidebar "&7&m----------" to "&7&m%{_line}%" at line 0
 				else:
-					set {_p}'s sidebar "&1&7&m----------" to "&7&m----------" at line 8
+					set {_p}'s sidebar "&1&7&m----------" to "&7&m%{_line}%" at line 8
 					set {_p}'s sidebar "&2Opponent&7: &f" to "%{_opponent}%" at line 7
 					set {_p}'s sidebar "&2Duration&7: &f" to "%{_duration}%" at line 6
 					set {_p}'s sidebar "&2" to "" at line 5
@@ -96,7 +108,7 @@ function refreshScoreboard(p: player):
 					set {_p}'s sidebar "&cTheir&7: &c" to "%calcWin({_opponent})%" at line 3
 					set {_p}'s sidebar "&1" to "" at line 2
 					set {_p}'s sidebar "&achocomint.cc" to "" at line 1
-					set {_p}'s sidebar "&7&m----------" to "&7&m----------" at line 0
+					set {_p}'s sidebar "&7&m----------" to "&7&m%{_line}%" at line 0
 	else if {nutil.player.%{_uuid}%::queue} is set:
 		set {_p}'s sidebar "&1&7&m----------" to "&7&m--------" at line 10
 		set {_p}'s sidebar "&2Onlines&7: &f" to "%size of all players%" at line 9
