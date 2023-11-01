@@ -1,0 +1,168 @@
+options:
+	prefix: &b[&enUtils&b]
+
+on load:
+	broadcast "{@prefix} &aSuccessfully loaded ArenaLoader"
+
+on unload:
+	broadcast "{@prefix} &cUnloaded ArenaLoader"
+
+command /arena [<text>] [<text>] [<text>]:
+	permission: admin
+	trigger:
+		if arg-1 is set:
+			if arg-1 is "help":
+				send "&6&l基本コマンド..."
+				send "<ttp:&bクリックでコマンドラインに張り付け><sgt:/arena help>&a/arena help<reset> &7- &eヘルプを参照します。"
+				send "<ttp:&bクリックでコマンドラインに張り付け><sgt:/arena create>&a/arena create [arenaname]<reset> &7- &e新しくアリーナを作成します。"
+				send "<ttp:&bクリックでコマンドラインに張り付け><sgt:/arena delete>&a/arena delete [arenaname]<reset> &7- &e既存のアリーナを削除します。"
+				send "<ttp:&bクリックでコマンドラインに張り付け><sgt:/arena list>&a/arena list [page]<reset> &7- &e既存のアリーナのリストを表示します。"
+				send "<ttp:&bクリックでコマンドラインに張り付け><sgt:/arena info>&a/arena info [arenaname]<reset> &7- &e既存のアリーナの情報を表示します。"
+				send "&6&l詳細コマンド..."
+				send "<ttp:&bクリックでコマンドラインに張り付け><sgt:/arena settype>&a/kit settype [arenaname] [maptype]<reset> &7- &e既存のアリーナのマップタイプを変更します。"
+				send "<ttp:&bクリックでコマンドラインに張り付け><sgt:/arena setspawn1>&a/kit setspawn1 [arenaname]<reset> &7- &e既存のアリーナのスポーンポイント(1)を設定します。"
+				send "<ttp:&bクリックでコマンドラインに張り付け><sgt:/arena setspawn2>&a/kit setspawn2 [arenaname]<reset> &7- &e既存のアリーナのスポーンポイント(2)を設定します。"
+			
+			if arg-1 is "create":
+				if arg-2 is set:
+					if {nutil.arena.list::%arg-2%} is not set:
+						set {nutil.arena.list::%arg-2%} to arg-2
+						set {nutil.arena.type::%arg-2%} to "Normal"
+						set {nutil.arena.spawn1::%arg-2%} to {nutil.location::lobby}
+						set {nutil.arena.spawn2::%arg-2%} to {nutil.location::lobby}
+						send "&a・新しいアリーナを作成しました。"
+						send "&7 ｜ Name: &f%arg-2%"
+						send "&7 ｜ Type: &f%{nutil.arena.type::%arg-2%}%"
+						send "&7 ｜ Spawn1: &f%{nutil.arena.spawn1::%arg-2%}%"
+						send "&7 ｜ Spawn2: &f%{nutil.arena.spawn2::%arg-2%}%"
+					else:
+						set {_error.arenaalready} to true
+				else:
+					set {_error.arenaname} to true
+
+			if arg-1 is "delete":
+				if arg-2 is set:
+					if {nutil.arena.list::%arg-2%} is set:
+						delete {nutil.arena.type::%arg-2%}
+						delete {nutil.arena.list::%arg-2%}
+						send "&c・アリーナを削除しました。"
+						send "&7 ｜ Name: &f%arg-2%"
+					else:
+						set {_error.arenanotexist} to true
+				else:
+					set {_error.arenaname} to true
+
+			if arg-1 is "list":
+				if {nutil.arena.list::*} is set:
+					if arg-2 is set:
+						set {_n} to arg-2 parsed as number
+						if {_n} is set:
+							set {_c} to 1
+							set {_ce} to {_n} * 5
+							set {_cs} to {_ce} - 4
+							set {_kits} to size of {nutil.arena.list::*}
+							set {_page} to 1
+							while {_kits} > 5:
+								add 1 to {_page}
+								subtract 5 from {_kits}
+							if {_n} > {_page}:
+								set {_error.notnumber} to true
+							else:
+								if {_page} > 1:
+									send "&a・アリーナリスト (%arg-2% / %{_page}%)"
+								else:
+									send "&a・アリーナリスト"
+								loop {nutil.arena.list::*}:
+									if {_c} > {_ce}:
+										exit loop
+									if {_c} >= {_cs}:
+										send "&7 ｜ <ttp:&bクリックで詳細を表示><run command:/arena info %loop-value%>&f%loop-value%<reset>"
+									add 1 to {_c}
+						else:
+							set {_error.notnumber} to true
+					else:
+						set {_c} to 1
+						set {_kits} to size of {nutil.arena.list::*}
+						set {_page} to 1
+						while {_kits} > 5:
+							add 1 to {_page}
+							subtract 5 from {_kits}
+						if {_page} > 1:
+							send "&a・アリーナリスト (1 / %{_page}%)"
+						else:
+							send "&a・アリーナリスト"
+						loop {nutil.arena.list::*}:
+							if {_c} > 5:
+								exit loop
+							send "&7 ｜ <ttp:&bクリックで詳細を表示><run command:/arena info %loop-value%>&f%loop-value%<reset>"
+							add 1 to {_c}
+				else:
+					set {_error.zeroarenas} to true
+
+			if arg-1 is "info":
+				if arg-2 is set:
+					if {nutil.arena.list::%arg-2%} is set:
+						send "&a・%arg-2%"
+						send "&7 ｜ Name: &f%arg-2%"
+						send "&7 ｜ Type: &f%{nutil.arena.type::%arg-2%}%"
+						send "&7 ｜ Spawn1: &f%{nutil.arena.spawn1::%arg-2%}%"
+						send "&7 ｜ Spawn2: &f%{nutil.arena.spawn2::%arg-2%}%"
+					else:
+						set {_error.arenanotexist} to true
+				else:
+					set {_error.arenaname} to true
+
+			if arg-1 is "settype":
+				if arg-2 is set:
+					if arg-3 is set:
+						if {nutil.arena.list::%arg-2%} is set:
+							set {nutil.arena.type::%arg-2%} to arg-3
+							send "&a・%arg-2%のマップタイプを設定しました。"
+							send "&7 ｜ Type: &f%{nutil.arena.type::%arg-2%}%"
+						else:
+							set {_error.arenanotexists} to true
+					else:
+						set {_error.maptype} to true
+				else:
+					set {_error.arenaname} to true
+
+			if arg-1 is "setspawn1":
+				if arg-2 is set:
+					if {nutil.arena.list::%arg-2%} is set:
+						set {nutil.arena.spawn1::%arg-2%} to change world location of player to "world" parsed as world
+						send "&a・%arg-2%のスポーンポイント(1)を設定しました。"
+						send "&7 ｜ Spawn1: &f%{nutil.arena.spawn1::%arg-2%}%"
+					else:
+						set {_error.arenanotexists} to true
+				else:
+					set {_error.arenaname} to true
+
+			if arg-1 is "setspawn2":
+				if arg-2 is set:
+					if {nutil.arena.list::%arg-2%} is set:
+						set {nutil.arena.spawn2::%arg-2%} to change world location of player to "world" parsed as world
+						send "&a・%arg-2%のスポーンポイント(2)を設定しました。"
+						send "&7 ｜ Spawn2: &f%{nutil.arena.spawn2::%arg-2%}%"
+					else:
+						set {_error.arenanotexists} to true
+				else:
+					set {_error.arenaname} to true
+
+
+		if {_error.arenaname} is set:
+			send "&cアリーナ名を入力してください。"
+
+		else if {_error.arenaalready} is set:
+			send "&cこのアリーナは既に存在しています。"
+
+		else if {_error.arenanotexist} is set:
+			send "&cこのアリーナは存在しません。"
+
+		else if {_error.zeroarenas} is set:
+			send "&cアリーナは存在しません。"
+
+		else if {_error.notnumber} is set:
+			send "&c有効な数字を入力してください。"
+
+		else if {_error.maptype} is set:
+			send "&cタイプを入力してください。"

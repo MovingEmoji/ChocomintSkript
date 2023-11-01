@@ -1,0 +1,166 @@
+options:
+	prefix: &b[&enUtils&b]
+	world: world
+
+on load:
+	broadcast "{@prefix} &aSuccessfully loaded FFARegion"
+
+on unload:
+	broadcast "{@prefix} &cUnloaded FFARegion"
+
+command /ffa [<text>]:
+	permission: admin
+	trigger:
+		if arg-1 is set:
+			if arg-1 is "set":
+				set {player.ffa.set::%player's uuid%} to true
+				delete {nutil.ffa.small::*} and {nutil.ffa.large::*}
+				clear player's inventory
+				wait a tick
+				set slot 0 of player's inventory to stone axe named "&a&l座標設定つーる"
+				set slot 8 of player's inventory to redstone named "&c&l終了する"
+		else:
+			set {_error.cmd} to true
+		if {_error.cmd} is set:
+			send "&c実行コマンドを入力して下さい。"
+
+function calcRange(n: number,r: text):
+	if {nutil.ffa.large::%{_r}%} > {_n}:
+		set {nutil.ffa.small::%{_r}%} to {_n}
+	else:
+		set {_tmp} to {nutil.ffa.large::%{_r}%}
+		set {nutil.ffa.large::%{_r}%} to {_n}
+		set {nutil.ffa.small::%{_r}%} to {_tmp}
+
+function startFFA(p: player):
+	set {_uuid} to uuid of {_p}
+	set {nutil.player.%{_uuid}%::combat} to true
+	leaveQueue({_p})
+	loadInventory({_p},"Sharp2Prot2")
+	resetPlayer({_p})
+
+function endFFA(p: player, t: text, n: text):
+	set {_uuid} to uuid of {_p}
+	if {nutil.player.%{_uuid}%::tp} is not set:
+		if {nutil.player.%{_uuid}%::combattime} is set:
+			set {_lc} to location of {_p}
+			if {_n} is "x":
+				if {_t} is "large":
+					set x coord of {_lc} to {nutil.ffa.large::x} + 0.3
+				else if {_t} is "small":
+					set x coord of {_lc} to {nutil.ffa.small::x} - 0.3
+			else if {_n} is "z":
+				if {_t} is "large":
+					set z coord of {_lc} to {nutil.ffa.large::z} + 0.3
+				else if {_t} is "small":
+					set z coord of {_lc} to {nutil.ffa.small::z} - 0.3
+			set {nutil.player.%{_uuid}%::tp} to true
+			teleport {_p} to {_lc}
+			delete {nutil.player.%{_uuid}%::tp}
+		else:
+			delete {nutil.player.%{_uuid}%::combat}
+			spawnitem({_p})
+			resetPlayer({_p})
+
+on right click:
+	if player's tool is stone axe:
+		if player's tool's name is "&a&l座標設定つーる":
+			if {player.ffa.set::%player's uuid%} is set:
+				cancel event
+				calcRange(x coord of event-block,"x")
+				calcRange(z coord of event-block,"z")
+
+	if player's tool is redstone:
+		if player's tool's name is "&c&l終了する":
+			if {player.ffa.set::%player's uuid%} is set:
+				cancel event
+				delete {player.ffa.set::%player's uuid%}
+				spawnitem(player)
+
+on left click:
+	if player's tool is stone axe:
+		if player's tool's name is "&a&l座標設定つーる":
+			if {player.ffa.set::%player's uuid%} is set:
+				cancel event
+				calcRange(x coord of event-block,"x")
+				calcRange(z coord of event-block,"z")
+on quit:
+	if {player.ffa.set::%player's uuid%} is set:
+		delete {player.ffa.set::%player's uuid%}
+
+on any move:
+	if {nutil.player.%player's uuid%::play} is not set:
+		if player is in "{@world}":
+			if x coord of player >= {nutil.ffa.large::x}:
+				if {nutil.player.%player's uuid%::combat} is not set:
+					startFFA(player)
+			else if x coord of player <= {nutil.ffa.small::x}:
+				if {nutil.player.%player's uuid%::combat} is not set:
+					startFFA(player)
+			else if z coord of player >= {nutil.ffa.large::z}:
+				if {nutil.player.%player's uuid%::combat} is not set:
+					startFFA(player)
+			else if z coord of player <= {nutil.ffa.small::z}:
+				if {nutil.player.%player's uuid%::combat} is not set:
+					startFFA(player)
+			else if {nutil.player.%player's uuid%::combat} is true:
+				if x coord of player < {nutil.ffa.large::x}:
+					if x coord of player > {nutil.ffa.large::x} - 0.5:
+						endFFA(player,"large","x")
+				if x coord of player > {nutil.ffa.small::x}:
+					if x coord of player < {nutil.ffa.small::x} + 0.5:
+						endFFA(player,"small","x")
+				if z coord of player < {nutil.ffa.large::z}:
+					if z coord of player > {nutil.ffa.large::z} - 0.5:
+						endFFA(player,"large","z")
+				if z coord of player > {nutil.ffa.small::z}:
+					if z coord of player < {nutil.ffa.small::z} + 0.5:
+						endFFA(player,"small","z")
+
+function clientBorderX(p: player, b: block):
+	if {_b} is air:
+		if z coord of {_b} <= {nutil.ffa.large::z}:
+			if z coord of {_b} >= {nutil.ffa.small::z}:
+				if distance between {_b} and block 1 above {_p} < 4.0:
+					make {_p} see {_b} as light blue glass block
+				else:
+					make {_p} see {_b} as air
+
+function clientBorderZ(p: player, b: block):
+	if {_b} is air:
+		if x coord of {_b} <= {nutil.ffa.large::x}:
+			if x coord of {_b} >= {nutil.ffa.small::x}:
+				if distance between {_b} and block 1 above {_p} < 4.0:
+					make {_p} see {_b} as light blue glass block
+				else:
+					make {_p} see {_b} as air
+
+every a tick:
+	loop all players:
+		if {nutil.player.%loop-player's uuid%::combat} is true:
+			if {nutil.player.%loop-player's uuid%::combattime} is set:
+				if difference between {nutil.player.%loop-player's uuid%::combattime} and now >= 20 seconds:
+					delete {nutil.player.%loop-player's uuid%::combattime}
+					loop blocks in radius 6 around the block 1 above loop-player:
+						if loop-block is air:
+							make loop-player see loop-block as air
+				else:
+					loop blocks in radius 6 around the block 1 above loop-player:
+						if x coord of loop-block is {nutil.ffa.large::x}:
+							clientBorderX(loop-player,loop-block)
+						if x coord of loop-block is {nutil.ffa.small::x}:
+							clientBorderX(loop-player,loop-block)
+						if z coord of loop-block is {nutil.ffa.large::z}:
+							clientBorderZ(loop-player,loop-block)
+						if z coord of loop-block is {nutil.ffa.small::z}:
+							clientBorderZ(loop-player,loop-block)
+							
+on damage:
+	if {nutil.player.%victim's uuid%::play} is not set:
+		if {nutil.player.%victim's uuid%::combat} is set:
+			if {nutil.player.%attacker's uuid%::combat} is set:
+				set {nutil.player.%attacker's uuid%::combattime} and {nutil.player.%victim's uuid%::combattime} to now
+			else:
+				cancel event
+		else:
+			cancel event

@@ -1,0 +1,50 @@
+options:
+	prefix: &b[&enUtils&b]
+	back_item: redstone named "&c&lろびーにもどる"
+
+on load:
+	broadcast "{@prefix} &aSuccessfully loaded SpectatorCommand"
+
+on unload:
+	broadcast "{@prefix} &cUnloaded SpectatorCommand"
+
+function removeSpec(p: player,n: number):
+	set {_uuid} to uuid of {_p}
+	if {nutil.match.spec::%{_n}%::*} contains {_p}:
+		remove {_p} from {nutil.match.spec::%{_n}%::*}
+		if gamemode of {_p} is not creative:
+			set flight mode of {_p} to false
+		loop all players:
+			reveal {_p} from loop-player
+
+command /spec [<player>]:
+	trigger:
+		if {nutil.player.%arg-1's uuid%::play} is set:
+			loop {nutil.match.team1::%{nutil.player.%arg-1's uuid%::matchnumber}%::*}:
+				hide player from loop-value
+			loop {nutil.match.team2::%{nutil.player.%arg-1's uuid%::matchnumber}%::*}:
+				hide player from loop-value
+			send "&7%player% があなたの試合を観戦しています。" to {nutil.match.team1::%{nutil.player.%arg-1's uuid%::matchnumber}%::*} and {nutil.match.team2::%{nutil.player.%arg-1's uuid%::matchnumber}%::*}
+			add player to {nutil.match.spec::%{nutil.player.%arg-1's uuid%::matchnumber}%::*}
+			set {nutil.player.%player's uuid%::matchnumber} to {nutil.player.%arg-1's uuid%::matchnumber}			
+			clear player's inventory
+			teleport player to arg-1
+			set flight mode of player to true
+			set slot 8 of player's inventory to {@back_item}
+
+on right click:
+	if event-item is {@back_item}:
+		cancel event
+		removeSpec(player,{nutil.player.%player's uuid%::matchnumber})
+		delete {nutil.player.%player's uuid%::matchnumber}
+		teleport player to {nutil.location::lobby}
+		spawnitem(player)
+		resetPlayer(player)
+		resetScoreboard(player)
+
+on pickup:
+	if {nutil.match.spec::%{nutil.player.%player's uuid%::matchnumber}%::*} contains player:
+		cancel event
+
+on quit:
+	removeSpec(player,{nutil.player.%player's uuid%::matchnumber})

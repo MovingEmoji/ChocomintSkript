@@ -1,0 +1,56 @@
+options:
+	prefix: &b[&enUtils&b]
+
+on load:
+	broadcast "{@prefix} &aSuccessfully loaded LocationFixAPI"
+	send "{@prefix} &6Location stats" to console
+	loop {nutil.location::*}:
+		send "{@prefix} &a・%loop-index%" to console
+		send "{@prefix} &7｜World:  %world of loop-value%" to console
+		send "{@prefix} &7｜Coordinate:  %loop-value%" to console
+		send "{@prefix} &7｜YawPitch:  yaw: %yaw of loop-value%, pitch: %pitch of loop-value%" to console
+
+on unload:
+	broadcast "{@prefix} &cUnloaded LocationFixAPI"
+
+command /location [<text>]:
+	permission: admin
+	trigger:
+		if arg-1 is set:
+			set {player.location::%player's uuid%} to arg-1
+			clear player's inventory
+			wait a tick
+			set slot 0 of player's inventory to stone axe named "&a&l座標設定つーる"
+			set slot 8 of player's inventory to redstone named "&c&l終了する"
+
+on right click:
+	if player's tool is stone axe:
+		if player's tool's name is "&a&l座標設定つーる":
+			if {player.location::%player's uuid%} is set:
+				cancel event
+				set {_pos} to {player.location::%player's uuid%}
+				set {nutil.location::%{_pos}%} to location of player
+				set x coord of {nutil.location::%{_pos}%} to x coord of event-block
+				set y coord of {nutil.location::%{_pos}%} to y coord of event-block
+				set z coord of {nutil.location::%{_pos}%} to z coord of event-block
+				set yaw of {nutil.location::%{_pos}%} to 0
+				set pitch of {nutil.location::%{_pos}%} to 0
+				send "{@prefix} &a&l%{_pos}% の座標を %location of event-block% に設定しました"
+
+	if player's tool is redstone:
+		if player's tool's name is "&c&l終了する":
+			if {player.location::%player's uuid%} is set:
+				cancel event
+				delete {player.location::%player's uuid%}
+				spawnitem(player)
+
+on quit:
+	if {player.location::%player's uuid%} is set:
+		delete {player.location::%player's uuid%}
+
+command /move [<text>]:
+	permission: admin
+	trigger:
+		if arg-1 is set:
+			if {nutil.location::%arg-1%} is set:
+				teleport player to {nutil.location::%arg-1%}

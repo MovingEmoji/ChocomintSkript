@@ -1,0 +1,39 @@
+options:
+	prefix: &b[&enUtils&b]
+	kit: Sharp2Prot2
+
+on load:
+	broadcast "{@prefix} &2Successfully loaded {@kit}'s knockback"
+
+on unload:
+	broadcast "{@prefix} &4Unloaded {@kit}'s knockback"
+
+player velocity event:
+	if {nutil.player.%player's uuid%::play} is "{@kit}":
+		if {nutil.player.%player's uuid%::lastattack} is set:
+			if {nutil.player.%player's uuid%::damagecause} is attack:
+				cancel event
+				set {_ag} to {nutil.player.%player's uuid%::lastattack}
+				delete {nutil.player.%player's uuid%::lastattack} and {nutil.player.%player's uuid%::damagecause}
+				set {_ag.uuid} to uuid of {_ag}
+				set {_v} to vector between {_ag} and player
+				set {_v} to normalized value of {_v}
+				if {nutil.player.sprint::%{_ag.uuid}%} is true:
+					set {nutil.player.sprint::%{_ag.uuid}%} to false
+					set x of {_v} to x of {_v} * 0.82
+					set z of {_v} to z of {_v} * 0.82
+					set y of {_v} to 0.425
+				else:
+					set x of {_v} to x of {_v} * 0.5
+					set z of {_v} to z of {_v} * 0.5
+					set y of {_v} to 0.36
+				if block 0.021 below location of player is air:
+					if {nutil.player.%player's uuid%::down} is not set:
+						set {nutil.player.%player's uuid%::down} to true
+						set y of {_v} to 0.35
+						set x of {_v} to x of {_v} * 0.85
+						set z of {_v} to z of {_v} * 0.85
+					else if {nutil.player.%player's uuid%::down} is true:
+						set y of {_v} to 0
+
+				set player's velocity to {_v}

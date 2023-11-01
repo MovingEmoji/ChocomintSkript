@@ -1,0 +1,10 @@
+on block break:
+	if event-block is end stone:
+		if player's tool is getNexusItem():
+			cancel event
+			play "ANVIL_LAND" to player at volume 1 with pitch 1.5
+			add 1 to {nutil.player.%player's uuid%::nexus}
+			send "&aCount&7: &f%{nutil.player.%player's uuid%::nexus}%"
+
+on join:
+	set {nutil.player.%player's uuid%::nexus} to 0

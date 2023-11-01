@@ -1,0 +1,22 @@
+options:
+	prefix: &b[&enUtils&b]
+	kit: Sumo
+
+on load:
+	broadcast "{@prefix} &2Successfully loaded {@kit}'s knockback"
+
+on unload:
+	broadcast "{@prefix} &4Unloaded {@kit}'s knockback"
+
+player velocity event:
+	if {nutil.player.%player's uuid%::play} is "{@kit}":
+		if {nutil.player.%player's uuid%::lastattack} is set:
+			if {nutil.player.%player's uuid%::damagecause} is attack:
+				cancel event
+				set {_ag} to {nutil.player.%player's uuid%::lastattack}
+				delete {nutil.player.%player's uuid%::lastattack} and {nutil.player.%player's uuid%::damagecause}
+				set {_ag.uuid} to uuid of {_ag}
+				set {_v} to vector between {_ag} and player
+				set {_v} to normalized value of {_v}
+				set y of {_v} to 0.36
+				set player's velocity to {_v}

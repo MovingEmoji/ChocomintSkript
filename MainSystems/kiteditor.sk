@@ -1,0 +1,166 @@
+options:
+	prefix: &b[&enUtils&b]
+	editor_name: "&a&lきっとえでぃとぅあー"
+	pot_name: "&a&lぽーしょんすとっく"
+	save_name: "&a&lきっとせぇばぁ"
+	trash_name: "&a&lごみぃばこぉ"
+
+on load:
+	broadcast "{@prefix} &aSuccessfully loaded KitEditor"
+
+on unload:
+	broadcast "{@prefix} &cUnloaded KitEditor"
+
+function editorSaver(p: player):
+	set {_uuid} to uuid of {_p}
+	set {_kit} to {nutil.player.%{_uuid}%::kitedit}
+	set {_inv} to chest inventory with 3 rows named {@save_name}
+	set slot 0 of {_inv} to ender pearl named "&aLoad Default"
+	set slot 9 of {_inv} to rail named "&cNope!"
+	set slot 18 of {_inv} to powered rail named "&cNope!"
+	set {_c} to 10
+	loop 8 times:
+		set {_s} to {_c} - 9
+		set slot {_c} of {_inv} to sign named "&eSave Kit &7[%{_s}%]"
+		if {nutil.kiteditor.%{_uuid}%::%{_kit}%::%{_s}%} is set: 
+			set slot {_s} of {_inv} to eye of ender named "&aLoad Kit"
+			set slot {_c}+9 of {_inv} to redstone named "&cDelete Kit"
+		add 1 to {_c}
+	open {_inv} for {_p}
+
+function encodeInventory(p: player) :: text:
+	set {_inv} to string inventory {_p}'s inventory
+	set {_inv} to "%{_inv}%//%string from item {_p}'s helmet%"
+	set {_inv} to "%{_inv}%//%string from item {_p}'s chestplate%"
+	set {_inv} to "%{_inv}%//%string from item {_p}'s leggings%"
+	set {_inv} to "%{_inv}%//%string from item {_p}'s boots%"
+	return {_inv}
+
+function loadEditKit(p: player,inv: text):
+	clear {_p}'s inventory
+	set {_inv::*} to {_inv} split at "//"
+	loop {_inv::*}:
+		set {_cnt} to loop-index parsed as number
+		if {_cnt} is 1:
+			set {_p}'s inventory to inventory from string {_inv::%loop-index%}
+		if {_cnt} is 2:
+			set {_p}'s helmet to item from string {_inv::%loop-index%}
+		if {_cnt} is 3:
+			set {_p}'s chestplate to item from string {_inv::%loop-index%}
+		if {_cnt} is 4:
+			set {_p}'s leggings to item from string {_inv::%loop-index%}
+		if {_cnt} is 5:
+			set {_p}'s boots to item from string {_inv::%loop-index%}
+	applyEffect({_p},{_kit})
+
+on right click:
+	if player's tool is getEditorItem():
+		cancel event
+		openKit(player,{@editor_name},"KitEditor")
+
+on inventory click:
+	if player's current inventory's name is {@editor_name}:
+		cancel event
+		if event-inventory is player's current inventory:
+			if event-item is not air:
+				set {_name} to getKitName(event-item)
+				set {nutil.player.%player's uuid%::kitedit} to {_name}
+				resetPlayer(player)
+				loadInventory(player,{_name})
+				teleport player to {nutil.location::kiteditor}
+
+	if player's current inventory's name is {@save_name}:
+		cancel event
+		if event-inventory is player's current inventory:
+			if event-item is ender pearl:
+				if event-item's name is "&aLoad Default":
+					resetPlayer(player)
+					loadInventory(player,{nutil.player.%player's uuid%::kitedit})
+
+			if event-item is sign:
+				if event-item's name contains "&eSave Kit":
+					set {_num} to event-item's name
+					set {_kit} to {nutil.player.%player's uuid%::kitedit}
+					replace "&eSave Kit &7[" with "" in {_num}
+					replace "]" with "" in {_num}
+					set {nutil.kiteditor.%player's uuid%::%{_kit}%::%{_num}%} to encodeInventory(player)
+					editorSaver(player)
+
+			if event-item is redstone:
+				if event-item's name contains "&cDelete Kit":
+					set {_c} to index of event-slot
+					subtract 9 from {_c}
+					set {_num} to slot {_c} of player's current inventory's name
+					set {_kit} to {nutil.player.%player's uuid%::kitedit}
+					replace "&eSave Kit &7[" with "" in {_num}
+					replace "]" with "" in {_num}
+					delete {nutil.kiteditor.%player's uuid%::%{_kit}%::%{_num}%}
+					editorSaver(player)
+
+			if event-item is eye of ender:
+				if event-item's name is "&aLoad Kit":
+					set {_c} to index of event-slot
+					set {_kit} to {nutil.player.%player's uuid%::kitedit}
+					resetPlayer(player)
+					loadEditKit(player,{nutil.kiteditor.%player's uuid%::%{_kit}%::%{_c}%})
+
+on right click on sign:
+	if line 2 of event-block is "back to lobby":
+		cancel event
+		delete {nutil.player.%player's uuid%::kitedit}
+		resetPlayer(player)
+		spawnitem(player)
+		teleport player to {nutil.location::lobby}
+
+on right click on brewing stand:
+	if {nutil.player.%player's uuid%::kitedit} is set:
+		cancel event
+		if {nutil.player.%player's uuid%::kitedit} is "Sharp2Prot2":
+			set {_chest} to chest inventory with 5 rows named {@pot_name}
+			set {_chest} to inventory from string {nutil.kit.inv::ffa}
+			set slot 36 of {_chest} to 64 of steak
+			set slot 37 of {_chest} to 64 of cooked porkchop
+			set slot 38 of {_chest} to 64 of cooked mutton
+			set slot 39 of {_chest} to 64 of cooked salmon
+			open {_chest} for player
+
+on right click:
+	if player's tool's name contains "&eLoad custom.":
+		set {_num} to event-item's name 
+		replace "&eLoad custom. &7[" with "" in {_num}
+		replace "]" with "" in {_num}
+		set {_kit} to {nutil.player.%player's uuid%::play}
+		loadEditKit(player,{nutil.kiteditor.%player's uuid%::%{_kit}%::%{_num}%})
+
+on right click on anvil:
+	if {nutil.player.%player's uuid%::kitedit} is set:
+		cancel event
+		editorSaver(player)
+
+on right click on chest:
+	if {nutil.player.%player's uuid%::kitedit} is set:
+		cancel event
+		openKit(player,{@editor_name},"KitEditor")
+
+on right click on end portal frame:
+	if {nutil.player.%player's uuid%::kitedit} is set:
+		cancel event
+		open chest with 3 rows named {@trash_name} for player
+
+on consume:
+	if {nutil.player.%player's uuid%::kitedit} is set:
+		cancel event
+
+on drop:
+	if {nutil.player.%player's uuid%::kitedit} is set:
+		cancel event
+
+on shoot:
+	if {nutil.player.%shooter's uuid%::kitedit} is set:
+		cancel event
+		if projectile is arrow:
+			give shooter an arrow 
+
+on block place:
+	if {nutil.player.%player's uuid%::kitedit} is set:
+		cancel event

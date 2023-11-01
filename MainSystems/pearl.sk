@@ -1,0 +1,55 @@
+options:
+	prefix: &b[&enUtils&b]
+
+on load:
+	broadcast "{@prefix} &aSuccessfully loaded PearlFixAPI"
+
+on unload:
+	broadcast "{@prefix} &cUnloaded PearlFixAPI"
+
+on shoot:
+	if projectile is ender pearl:
+		if {nutil.player.%shooter's uuid%::kitedit} is not set:
+			if difference between {nutil.player.%shooter's uuid%::peral} and now >= 15 seconds:
+				set {_t} to true
+			else if {nutil.player.%shooter's uuid%::peral} is not set:
+				set {_t} to true
+			if {_t} is set:
+				set {nutil.player.%shooter's uuid%::peral} to now
+				set {nutil.player.%shooter's uuid%::coolcount} to 15
+				while difference between {nutil.player.%shooter's uuid%::peral} and now <= 15 seconds:
+					set {_time} to difference between {nutil.player.%shooter's uuid%::peral} and now
+					set {_time} to "%difference between 15 seconds and {_time}%"
+					replace " seconds" with "" in {_time}
+					set {_time} to {_time} parsed as number
+					set shooter's level to {_time}
+					set {_level} to {_time} / 15
+					if {_level} >= 0.01:
+						set level progress of shooter to {_level} - 0.01
+					else:
+						set level progress of shooter to 0
+					subtract 0.1 from {nutil.player.%shooter's uuid%::coolcount}
+					wait 2 tick
+			else:
+				cancel event
+				give shooter ender pearl
+				send "&7Cooldown, Please wait &2%{nutil.player.%shooter's uuid%::coolcount}%" to shooter
+		else:
+			cancel event
+			give shooter ender pearl
+			send "&cYou can't use this item here." to shooter
+
+on right click:
+	if event-item is ender pearl:
+		if difference between {nutil.player.%player's uuid%::peral} and now < 15 seconds:
+			cancel event
+			send "&7Cooldown, Please wait &2%{nutil.player.%player's uuid%::coolcount}%" to player
+
+on damage:
+	if damage cause is fall:
+		set {_kit} to {nutil.player.%victim's uuid%::play}
+		if {nutil.kit.flag::%{_kit}%} contains "Normal":
+			set damage to 0
+		else if {nutil.kit.flag::%{_kit}%} contains "MLG" or "Bridge":
+			cancel event
+

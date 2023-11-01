@@ -1,0 +1,35 @@
+options:
+	prefix: &b[&enUtils&b]
+	unranked_item: iron sword named "&b&lふりぃまつちぃ"
+	ranked_item: diamond sword named "&c&lらんくまつちぃ"
+
+	nexus_item: gold pickaxe of efficiency 3 and unbreaking 3 named "&e&lきらきらぴっける" 
+
+	editor_item: book named "&a&lきっとえでぃとぅあー"
+
+on load:
+	broadcast "{@prefix} &aSuccessfully loaded SpawnItemAPI"
+
+on unload:
+	broadcast "{@prefix} &cUnloaded SpawnItemAPI"
+
+function spawnitem(p: player):
+	clear {_p}'s inventory
+	set slot 0 of {_p}'s inventory to {@unranked_item}
+	set slot 1 of {_p}'s inventory to {@ranked_item}
+	set slot 3 of {_p}'s inventory to {@editor_item}
+
+function getUnRankedItem() :: item:
+	return {@unranked_item}
+
+function getRankedItem() :: item:
+	return {@ranked_item}
+
+function getNexusItem() :: item:
+	return {@nexus_item}
+
+function getEditorItem() :: item:
+	return {@editor_item}
+
+on join:
+	spawnitem(player)

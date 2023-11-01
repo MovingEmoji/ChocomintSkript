@@ -1,0 +1,18 @@
+on damage:
+	if attacker is a player:
+		set {nutil.player.%victim's uuid%::lastattack} to attacker
+		set {nutil.player.%victim's uuid%::damagecause} to damage cause
+
+every 1 tick:
+	loop all players:
+		if loop-player is not sprinting: 
+			delete {nutil.player.sprint::%loop-player's uuid%}
+		else:
+			if {nutil.player.sprint::%loop-player's uuid%} is not set:
+				set {nutil.player.sprint::%loop-player's uuid%} to true
+		if block 0.6 below loop-player is not air:
+			set {nutil.player.lastground::%loop-player's uuid%} to 0
+		if block 0.02 below loop-player is not air:
+			delete {nutil.player.%loop-player's uuid%::down}
+		else:
+			add 1 to {nutil.player.lastground::%loop-player's uuid%}

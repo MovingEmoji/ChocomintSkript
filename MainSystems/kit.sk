@@ -1,0 +1,256 @@
+options:
+	prefix: &b[&enUtils&b]
+
+on load:
+	broadcast "{@prefix} &aSuccessfully loaded KitLoaderAPI"
+	send "{@prefix} &6Kit stats" to console
+	loop {nutil.kit.list::*}:
+		send "{@prefix} &a・%loop-value%" to console
+		send "{@prefix} &7｜Name:  %{nutil.kit.list::%loop-index%}%" to console
+		send "{@prefix} &7｜Flag:  %{nutil.kit.flag::%loop-index%}%" to console
+		send "{@prefix} &7｜Type:  %{nutil.kit.type::%loop-index%}%" to console
+		send "{@prefix} &7｜Icon:  %{nutil.kit.icon::%loop-index%}%" to console
+
+on unload:
+	broadcast "{@prefix} &cUnloaded KitLoaderAPI"
+
+function loadInventory(p: player, kit: text):
+	clear {_p}'s inventory
+	set {_p}'s inventory to inventory from string {nutil.kit.inv::%{_kit}%}
+	set {_p}'s helmet to {nutil.kit.helmet::%{_kit}%}
+	set {_p}'s chestplate to {nutil.kit.chestplate::%{_kit}%}
+	set {_p}'s leggings to {nutil.kit.leggings::%{_kit}%}
+	set {_p}'s boots to {nutil.kit.boots::%{_kit}%}
+	applyEffect({_p},{_kit})
+
+function applyEffect(p: player, kit: text):
+	if {_kit} is "Boxing" or "OneHitKill":
+		apply ambient speed 2 to {_p} for 9999 days
+
+command /kit [<text>] [<text>] [<text>]:
+	permission: admin
+	trigger:
+		if arg-1 is set:
+			if arg-1 is "help":
+				send "&6&l基本コマンド..."
+				send "<ttp:&bクリックでコマンドラインに張り付け><sgt:/kit help>&a/kit help<reset> &7- &eヘルプを参照します。"
+				send "<ttp:&bクリックでコマンドラインに張り付け><sgt:/kit create>&a/kit create [kitname]<reset> &7- &e新しくキットを作成します。"
+				send "<ttp:&bクリックでコマンドラインに張り付け><sgt:/kit delete>&a/kit delete [kitname]<reset> &7- &e既存のキットを削除します。"
+				send "<ttp:&bクリックでコマンドラインに張り付け><sgt:/kit list>&a/kit list [page]<reset> &7- &e既存のキットのリストを表示します。"
+				send "<ttp:&bクリックでコマンドラインに張り付け><sgt:/kit info>&a/kit info [kitname]<reset> &7- &e既存のキットの情報を表示します。"
+				send "&6&l詳細コマンド..."
+				send "<ttp:&bクリックでコマンドラインに張り付け><sgt:/kit seticon>&a/kit seticon [kitname]<reset> &7- &e既存のキットのアイコンを変更します。"
+				send "<ttp:&bクリックでコマンドラインに張り付け><sgt:/kit setflag>&a/kit setflag [kitname] [flag]<reset> &7- &e既存のキットのフラッグタイプを変更します。"
+				send "<ttp:&bクリックでコマンドラインに張り付け><sgt:/kit settype>&a/kit settype [kitname] [maptype]<reset> &7- &e既存のキットのマップタイプを変更します。"
+				send "<ttp:&bクリックでコマンドラインに張り付け><sgt:/kit setround>&a/kit setround [kitname] [number]<reset> &7- &e既存のキットのラウンド数を変更します。"
+				send "<ttp:&bクリックでコマンドラインに張り付け><sgt:/kit setinv>&a/kit setinv [kitname] <reset> &7- &e既存のキットのインベントリを設定します。"
+				send "<ttp:&bクリックでコマンドラインに張り付け><sgt:/kit loadinv>&a/kit loadinv [kitname]<reset> &7- &e既存のキットのインベントリを読み込みます。"
+
+			if arg-1 is "create":
+				if arg-2 is set:
+					if {nutil.kit.list::%arg-2%} is not set:
+						set {nutil.kit.list::%arg-2%} to arg-2
+						if player's tool is air:
+							set {nutil.kit.icon::%arg-2%} to wooden sword
+						else:
+							set {nutil.kit.icon::%arg-2%} to player's tool
+						set {nutil.kit.flag::%arg-2%} to "Normal"
+						set {nutil.kit.type::%arg-2%} to "Normal"
+						set {nutil.kit.round::%arg-2%} to 1
+						send "&a・新しいキットを作成しました。"
+						send "&7 ｜ Name: &f%arg-2%"
+						send "&7 ｜ Flag: &f%{nutil.kit.flag::%arg-2%}%"
+						send "&7 ｜ Type: &f%{nutil.kit.type::%arg-2%}%"
+						send "&7 ｜ Round: &f%{nutil.kit.round::%arg-2%}%"
+						send "&7 ｜ Icon: &f%{nutil.kit.icon::%arg-2%}%"
+					else:
+						set {_error.kitalready} to true
+				else:
+					set {_error.kitname} to true
+
+			if arg-1 is "delete":
+				if arg-2 is set:
+					if {nutil.kit.list::%arg-2%} is set:
+						delete {nutil.kit.inv::%arg-2%}
+						delete {nutil.kit.helmet::%arg-2%}
+						delete {nutil.kit.chestplate::%arg-2%}
+						delete {nutil.kit.leggings::%arg-2%}
+						delete {nutil.kit.boots::%arg-2%}
+						delete {nutil.kit.flag::%arg-2%}
+						delete {nutil.kit.type::%arg-2%}
+						delete {nutil.kit.icon::%arg-2%}
+						delete {nutil.kit.round::%arg-2%}
+						delete {nutil.kit.list::%arg-2%}
+						send "&c・キットを削除しました。"
+						send "&7 ｜ Name: &f%arg-2%"
+					else:
+						set {_error.kitnotexist} to true
+				else:
+					set {_error.kitname} to true
+
+			if arg-1 is "list":
+				if {nutil.kit.list::*} is set:
+					if arg-2 is set:
+						set {_n} to arg-2 parsed as number
+						if {_n} is set:
+							set {_c} to 1
+							set {_ce} to {_n} * 5
+							set {_cs} to {_ce} - 4
+							set {_kits} to size of {nutil.kit.list::*}
+							set {_page} to 1
+							while {_kits} > 5:
+								add 1 to {_page}
+								subtract 5 from {_kits}
+							if {_n} > {_page}:
+								set {_error.notnumber} to true
+							else:
+								if {_page} > 1:
+									send "&a・キットリスト (%arg-2% / %{_page}%)"
+								else:
+									send "&a・キットリスト"
+								loop {nutil.kit.list::*}:
+									if {_c} > {_ce}:
+										exit loop
+									if {_c} >= {_cs}:
+										send "&7 ｜ <ttp:&bクリックで詳細を表示><run command:/kit info %loop-value%>&f%loop-value%<reset>"
+									add 1 to {_c}
+						else:
+							set {_error.notnumber} to true
+					else:
+						set {_c} to 1
+						set {_kits} to size of {nutil.kit.list::*}
+						set {_page} to 1
+						while {_kits} > 5:
+							add 1 to {_page}
+							subtract 5 from {_kits}
+						if {_page} > 1:
+							send "&a・キットリスト (1 / %{_page}%)"
+						else:
+							send "&a・キットリスト"
+						loop {nutil.kit.list::*}:
+							if {_c} > 5:
+								exit loop
+							send "&7 ｜ <ttp:&bクリックで詳細を表示><run command:/kit info %loop-value%>&f%loop-value%<reset>"
+							add 1 to {_c}
+				else:
+					set {_error.zerokits} to true
+
+			if arg-1 is "info":
+				if arg-2 is set:
+					if {nutil.kit.list::%arg-2%} is set:
+						send "&a・%arg-2%"
+						send "&7 ｜ Name: &f%arg-2%"
+						send "&7 ｜ Flag: &f%{nutil.kit.flag::%arg-2%}%"
+						send "&7 ｜ Type: &f%{nutil.kit.type::%arg-2%}%"
+						send "&7 ｜ Round: &f%{nutil.kit.round::%arg-2%}%"
+						send "&7 ｜ Icon: &f%{nutil.kit.icon::%arg-2%}%"
+					else:
+						set {_error.kitnotexist} to true
+				else:
+					set {_error.kitname} to true
+
+			if arg-1 is "seticon":
+				if arg-2 is set:
+					if {nutil.kit.list::%arg-2%} is set:
+						set {nutil.kit.icon::%arg-2%} to player's tool
+						send "&a・%arg-2%のアイコンを設定しました。"
+						send "&7 ｜ Icon: &f%{nutil.kit.icon::%arg-2%}%"
+					else:
+						set {_error.kitnotexists} to true
+				else:
+					set {_error.kitname} to true
+
+			if arg-1 is "settype":
+				if arg-2 is set:
+					if arg-3 is set:
+						if {nutil.kit.list::%arg-2%} is set:
+							set {nutil.kit.type::%arg-2%} to arg-3
+							send "&a・%arg-2%のマップタイプを設定しました。"
+							send "&7 ｜ Type: &f%{nutil.kit.type::%arg-2%}%"
+						else:
+							set {_error.kitnotexists} to true
+					else:
+						set {_error.maptype} to true
+				else:
+					set {_error.kitname} to true
+
+			if arg-1 is "setflag":
+				if arg-2 is set:
+					if arg-3 is set:
+						if {nutil.kit.list::%arg-2%} is set:
+							set {nutil.kit.flag::%arg-2%} to arg-3
+							send "&a・%arg-2%のフラッグを設定しました。"
+							send "&7 ｜ Flag: &f%{nutil.kit.flag::%arg-2%}%"
+						else:
+							set {_error.kitnotexists} to true
+					else:
+						set {_error.flag} to true
+				else:
+					set {_error.kitname} to true
+
+			if arg-1 is "setround":
+				if arg-2 is set:
+					if arg-3 is set:
+						if {nutil.kit.list::%arg-2%} is set:
+							set {_n} to arg-3 parsed as number
+							if {_n} is set:
+								set {nutil.kit.round::%arg-2%} to {_n}
+								send "&a・%arg-2%のラウンド数を設定しました。"
+								send "&7 ｜ Round: &f%{nutil.kit.round::%arg-2%}%"
+							else:
+								set {_error.notnumber} to true
+						else:
+							set {_error.kitnotexists} to true
+					else:
+						set {_error.round} to true
+				else:
+					set {_error.kitname} to true
+
+			if arg-1 is "setinv":
+				if arg-2 is set:
+					if {nutil.kit.list::%arg-2%} is set:
+						set {nutil.kit.inv::%arg-2%} to string inventory player's inventory
+						set {nutil.kit.helmet::%arg-2%} to player's helmet
+						set {nutil.kit.chestplate::%arg-2%} to player's chestplate
+						set {nutil.kit.leggings::%arg-2%} to player's leggings
+						set {nutil.kit.boots::%arg-2%} to player's boots
+						send "&a・%arg-2%のインベントリを設定しました。"
+					else:
+						set {_error.kitnotexists} to true
+				else:
+					set {_error.kitname} to true
+
+			if arg-1 is "loadinv":
+				if arg-2 is set:
+					if {nutil.kit.list::%arg-2%} is set:
+						loadInventory(player,arg-2)
+						send "&a・%arg-2%のインベントリを読み込みました。"
+					else:
+						set {_error.kitnotexists} to true
+
+				else:
+					set {_error.kitname} to true
+
+		if {_error.kitname} is set:
+			send "&cキット名を入力してください。"
+
+		else if {_error.kitalready} is set:
+			send "&cこのキットは既に存在しています。"
+
+		else if {_error.kitnotexist} is set:
+			send "&cこのキットは存在しません。"
+
+		else if {_error.zerokits} is set:
+			send "&cキットは存在しません。"
+
+		else if {_error.round} is set:
+			send "&cラウンド数を入力してください。"
+
+		else if {_error.notnumber} is set:
+			send "&c有効な数字を入力してください。"
+
+		else if {_error.maptype} is set:
+			send "&cタイプを入力してください。"
+
+		else if {_error.flag} is set:
+			send "&cフラッグを入力してください。"

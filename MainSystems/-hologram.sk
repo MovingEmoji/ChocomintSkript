@@ -1,0 +1,23 @@
+on join:
+	wait a tick
+	if player's name is "MovingEmoji":
+		execute console command "/summon ArmorStand %x coord of player% %y coord of player% %z coord of player% {Invisible:1b,NoBasePlate:1b,NoGravity:1b,Small:1b,Marker:1b,CustomName:""&f&k!!!&a&lおかねほしぃ&f&k!!!"",CustomNameVisible:1b}"
+		loop entities in radius 0.5 block around player:
+			if loop-entity is armor stand:
+				set {_holo} to loop-entity
+				exit loop
+		while player is online:
+			teleport {_holo} to location 0.5 above player's head location
+			wait a tick
+		kill {_holo}
+
+	if player's name is "CreaMint":
+		execute console command "/summon ArmorStand %x coord of player% %y coord of player% %z coord of player% {Invisible:1b,NoBasePlate:1b,NoGravity:1b,Small:1b,Marker:1b,CustomName:""&f&k!!!&2&lりきもと過保護部部長&f&k!!!"",CustomNameVisible:1b}"
+		loop entities in radius 0.5 block around player:
+			if loop-entity is armor stand:
+				set {_holo} to loop-entity
+				exit loop
+		while player is online:
+			teleport {_holo} to location 0.5 above player's head location
+			wait a tick
+		kill {_holo}

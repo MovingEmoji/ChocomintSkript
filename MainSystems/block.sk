@@ -1,0 +1,39 @@
+options:
+	prefix: &b[&enUtils&b]
+
+on load:
+	broadcast "{@prefix} &aSuccessfully loaded BlockPlacer"
+
+on unload:
+	broadcast "{@prefix} &cUnloaded BlockPlacer"
+
+on block place:
+	if player's gamemode is not creative:
+		if y coord of event-block <= 85.5:
+			if {nutil.player.%player's uuid%::play} is set:
+				set {_matchnumber} to  {nutil.player.%player's uuid%::matchnumber}
+				add location of event-block to {nutil.match.block::%{_matchnumber}%::*}
+			else:
+				add location of event-block to {nutil.player.block.%player's uuid%::*}
+		else:
+			cancel event
+			send "&cこれ以上高くブロックを積み上げることはできません。" to player
+
+on block break:
+	if player's gamemode is not creative:
+		if {nutil.player.%player's uuid%::play} is set:
+			set {_matchnumber} to  {nutil.player.%player's uuid%::matchnumber}
+			if {nutil.match.block::%{_matchnumber}%::*} contains location of event-block:
+				remove location of event-block from {nutil.match.block::%{_matchnumber}%::*}
+			else:
+				cancel event
+		else:
+			if {nutil.player.block.%player's uuid%::*} is not set:
+				cancel event
+			else if {nutil.player.block.%player's uuid%::*} does not contain location of event-block:
+				cancel event
+			else:
+				remove location of event-block from {nutil.player.block.%player's uuid%::*}
+
+on quit:
+	delete {nutil.player.block.%player's uuid%::*}

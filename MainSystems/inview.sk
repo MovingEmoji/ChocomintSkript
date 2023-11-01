@@ -1,0 +1,32 @@
+options:
+	prefix: &b[&enUtils&b]
+
+on load:
+	broadcast "{@prefix} &aSuccessfully loaded InventoryViewer"
+
+on unload:
+	broadcast "{@prefix} &cUnloaded InventoryViewer"
+
+
+command /inview [<number>] [<offline player>]:
+	trigger:
+		if arg-1 is set:
+			if arg-2 is set:
+				if {nutil.match.inventory::%arg-1%::%arg-2%} is set:
+					open {nutil.match.inventory::%arg-1%::%arg-2%} for player
+				else:
+					set {_error.notexist} to true
+			else:
+				set {_error.player} to true
+		else:
+			set {_error.matchnumber} to true
+		if {_error.matchnumber} is set:
+			send "&cマッチナンバーを入力してください。"
+		else if {_error.player} is set:
+			send "&cプレイヤー名を入力してください。"
+		else if {_error.notexist} is set:
+			send "&cインベントリが存在しません。"
+
+on inventory click:
+	if name of player's current inventory contains " のインベントリ":
+		cancel event

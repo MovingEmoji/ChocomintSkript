@@ -1,0 +1,79 @@
+options:
+	prefix: &b[&enUtils&b]
+
+on load:
+	broadcast "{@prefix} &aSuccessfully loaded PrefixAPI"
+
+on unload:
+	broadcast "{@prefix} &cUnloaded PrefixAPI"
+
+function reloadPrefix(p: player, pre: text):
+	loop all players:
+		set {_t} to team named "%{_p}%" in loop-player's scoreboard
+		set prefix of team {_t} to {_pre}
+
+function reloadSuffix(p: player, suf: text):
+	loop all players:
+		set {_t} to team named "%{_p}%" in loop-player's scoreboard
+		set suffix of team {_t} to {_suf}
+
+command /prefix [<text>] [<offline player>] [<text>]:
+	permission: admin
+	trigger:
+		if arg-1 is set:
+			if arg-1 is "set":
+				if arg-2 is set:
+					if arg-3 is set:
+						set {_prefix} to arg-3
+						replace all "&" with "§" in {_prefix}
+						set {nutil.prefix.list::%arg-2's uuid%} to {_prefix}
+						send "&a%arg-2% のPrefixを&r %{_prefix}% &aに設定しました。"
+						reloadPrefix(arg-2,{nutil.prefix.list::%arg-2's uuid%})
+					else:
+						set {_error.prefixnotset} to true
+				else:
+					set {_error.playernotset} to true
+
+
+			if arg-1 is "delete":
+				if arg-2 is set:
+					delete {nutil.prefix.list::%arg-2's uuid%}
+					reloadPrefix(arg-2,"")
+				else:
+					set {_error.playernotset} to true
+
+		if {_error.prefixnotset} is set:
+			send "&cプレフィックスを入力してください。"
+		else if {_error.playernotset} is set:
+			send "&cプレイヤー名を入力してください。"
+
+on join:
+	set {_ps::*} to all players
+	wait a second
+	if player's scoreboard is not main scoreboard:
+		loop {_ps::*}:
+			if loop-value is not player:
+				set {_pt} to register team named "%loop-value%" in player's scoreboard
+				entry loop-value to {_pt}
+				if {nutil.prefix.list::%loop-value's uuid%} is set:
+					set prefix of team {_pt} to {nutil.prefix.list::%loop-value's uuid%}
+				if {nutil.suffix.list::%loop-value's uuid%} is set:
+					set suffix of team {_pt} to {nutil.suffix.list::%loop-value's uuid%}
+				set {_lt} to team named "%player%" in loop-value's scoreboard
+				if {_lt} is not set:
+					set {_lt} to register team named "%player%" in loop-value's scoreboard
+					entry player to {_lt}
+					if {nutil.prefix.list::%player's uuid%} is set:
+						set prefix of team {_lt} to {nutil.prefix.list::%player's uuid%}
+					if {nutil.suffix.list::%player's uuid%} is set:
+						set suffix of team {_lt} to {nutil.suffix.list::%player's uuid%}
+			else:
+				set {_pt} to register team named "%player%" in player's scoreboard
+				entry player to {_pt}
+				if {nutil.prefix.list::%player's uuid%} is set:
+					set prefix of team {_pt} to {nutil.prefix.list::%player's uuid%}
+				if {nutil.suffix.list::%player's uuid%} is set:
+					set suffix of team {_pt} to {nutil.suffix.list::%player's uuid%}
+			delete {_pt} and {_lt}
+	else:
+		send "&cスコアボードが更新できないためプレフィックスを読み込めませんでした。"

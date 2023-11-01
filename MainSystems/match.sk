@@ -1,0 +1,444 @@
+options:
+	prefix: &b[&enUtils&b]
+
+on load:
+	broadcast "{@prefix} &aSuccessfully loaded MatchAPI"
+	loop {nutil.match.stats::*}:
+		delete {nutil.match.team1::%loop-index%::*} and {nutil.match.team2::%loop-index%::*}
+		delete {nutil.match.inventory::%loop-index%::*}
+	delete {nutil.match.stats::*}
+	if {nutil.match.number} is not set:
+		set {nutil.match.number} to 0
+	loop {nutil.match.number} times:
+		delete {nutil.match.duration::%loop-value%}
+		delete {nutil.match.inventory::%loop-value%::*}
+		delete {nutil.match.spec::%loop-value%::*}
+		delete {nutil.match.team1::%loop-value%::*} and {nutil.match.team2::%loop-value%::*}
+		delete {nutil.match.current.team1::%loop-value%::*} and {nutil.match.current.team2::%loop-value%::*}
+		delete {nutil.match.win::%loop-value%::*}
+	set {nutil.match.number} to 0
+
+on unload:
+	broadcast "{@prefix} &cUnloaded MatchAPI"
+
+
+function pointCalc(p: player, blk: block):
+	set {_uuid} to uuid of {_p}
+	set {_kit} to {nutil.player.%{_uuid}%::play}
+	set {_team} to {nutil.player.%{_uuid}%::team}
+	set {_matchnumber} to {nutil.player.%{_uuid}%::matchnumber}
+	set {_mapname} to {nutil.match.mapname::%{_matchnumber}%}
+	set {_map} to {nutil.match.map::%{_matchnumber}%}
+	set {_spawn1} to {nutil.arena.spawn1::%{_mapname}%}
+	set {_spawn1} to change world {_spawn1} to {_map} parsed as world
+	set {_spawn2} to {nutil.arena.spawn2::%{_mapname}%}
+	set {_spawn2} to change world {_spawn2} to {_map} parsed as world
+	set {_distance1} to distance between {_blk} and {_spawn1}
+	set {_distance2} to distance between {_blk} and {_spawn2}
+	if {nutil.player.%{_uuid}%::team} is 1:
+		set {_opponent} to {nutil.match.team2::%{_matchnumber}%::1}
+	else:
+		set {_opponent} to {nutil.match.team1::%{_matchnumber}%::1}
+	if {_team} is 1:
+		if {_distance1} > {_distance2}:
+			set {_pass.1} to true
+	else if {_team} is 2:
+		if {_distance2} > {_distance1}:
+			set {_pass.1} to true
+	if {_pass.1} is true:
+		endMatchCalc({_opponent},"death")
+	else:
+		if {nutil.kit.flag::%{_kit}%} contains "Bridge":
+			kill {_p}
+
+function deathFunc(v: entity, a: entity):
+	set {_vuuid} to uuid of {_v}
+	set {_matchnumber} to {nutil.player.%{_vuuid}%::matchnumber}
+	if {_a} is set:
+		if {nutil.player.%{_vuuid}%::team} is 1:
+			send "&c%{_v}% &7was slain by &a%{_a}%" to {nutil.match.team2::%{_matchnumber}%::*}
+			send "&a%{_v}% &7was slain by &c%{_a}%" to {nutil.match.team1::%{_matchnumber}%::*}
+		else if {nutil.player.%{_vuuid}%::team} is 2:
+			send "&c%{_v}% &7was slain by &a%{_a}%" to {nutil.match.team1::%{_matchnumber}%::*}
+			send "&a%{_v}% &7was slain by &c%{_a}%" to {nutil.match.team2::%{_matchnumber}%::*}
+	else:
+		if {nutil.player.%{_vuuid}%::team} is 1:
+			send "&c%{_v}% &7was dead" to {nutil.match.team2::%{_matchnumber}%::*}
+			send "&a%{_v}% &7was dead" to {nutil.match.team1::%{_matchnumber}%::*}
+		else if {nutil.player.%{_vuuid}%::team} is 2:
+			send "&c%{_v}% &7was dead" to {nutil.match.team1::%{_matchnumber}%::*}
+			send "&a%{_v}% &7was dead" to {nutil.match.team2::%{_matchnumber}%::*}
+	send "&7%{_v}% was slain by %{_a}%" to {nutil.match.spec::%{_matchnumber}%::*}
+	set {_kit} to {nutil.player.%{_vuuid}%::play}
+	if {nutil.kit.flag::%{_kit}%} contains "MLG" or "Bridge":
+		wait a tick
+		force {_v} to respawn
+		wait a tick
+		set {_mapname} to {nutil.match.mapname::%{_matchnumber}%}
+		set {_map} to {nutil.match.map::%{_matchnumber}%}
+		set {_team} to {nutil.player.%{_vuuid}%::team}
+		set {_spawn} to {nutil.arena.spawn%{_team}%::%{_mapname}%}
+		set {_spawn} to change world {_spawn} to {_map} parsed as world
+		teleport {_v} to {_spawn}
+		loadInventory({_v},{nutil.player.%{_vuuid}%::play})
+	else:
+		endMatchCalc({_v},"death")
+
+function resetPlayer(p: entity):
+	heal {_p}
+	clear {_p}'s potion effects
+	set {_p}'s food level to 10
+	set {_p}'s saturation to 20
+	set {_p}'s fire tick to 0
+	set {_p}'s level to 0
+	set {_p}'s level progress to 0
+	delete {_p}'s stuff arrows
+	close {_p}'s inventory
+	if gamemode of {_p} is not creative:
+		set flight mode of {_p} to false
+
+function saveInventory(p: player) :: inventory:
+	set {_inv} to chest inventory with 5 rows named "&e%{_p}% のインベントリ"
+	set {_inv} to inventory from string string inventory {_p}'s inventory
+	set slot 36 of {_inv} to {_p}'s helmet
+	set slot 37 of {_inv} to {_p}'s chestplate
+	set slot 38 of {_inv} to {_p}'s leggings
+	set slot 39 of {_inv} to {_p}'s boots
+	set {_slot} to 40
+	loop 5 times:
+		set slot {_slot} of {_inv} to black stained glass pane
+		add 1 to {_slot}
+	return {_inv}
+
+
+function endMatchCalc(p: player, type: text):
+	set {_uuid} to uuid of {_p}
+	if {nutil.player.%{_uuid}%::play} is set:
+		set {_matchnumber} to {nutil.player.%{_uuid}%::matchnumber}
+		set {_kit} to {nutil.player.%{_uuid}%::play}
+
+		if {_type} is "death":
+			if {nutil.player.%{_uuid}%::team} is 1:
+				add 1 to {nutil.match.win::%{_matchnumber}%::2}
+				if {nutil.match.win::%{_matchnumber}%::2} >= {nutil.kit.round::%{_kit}%}:
+					set {_pass.1} to true
+				else:
+					sendMatch({nutil.match.team1::%{_matchnumber}%::*},{nutil.match.team2::%{_matchnumber}%::*})
+			else if {nutil.player.%{_uuid}%::team} is 2:
+				add 1 to {nutil.match.win::%{_matchnumber}%::1}
+				if {nutil.match.win::%{_matchnumber}%::1} >= {nutil.kit.round::%{_kit}%}:
+					set {_pass.1} to true
+				else:
+					sendMatch({nutil.match.team1::%{_matchnumber}%::*},{nutil.match.team2::%{_matchnumber}%::*})
+		else if {_type} is "quit":
+			set {_pass.1} to true
+
+		if {_pass.1} is true:
+			if {nutil.player.%{_uuid}%::team} is 1:
+				endMatch({_p},{nutil.match.team2::%{_matchnumber}%::*},1,{_matchnumber})
+			else if {nutil.player.%{_uuid}%::team} is 2:
+				endMatch({_p},{nutil.match.team1::%{_matchnumber}%::*},2,{_matchnumber})
+
+function endMatch(p: entity ,t1: entities, n: number, match: number):
+	if {nutil.match.stats::%{_match}%} is set:
+		remove {_p} from {nutil.match.current.team%{_n}%::%{_match}%::*}
+		if {nutil.match.current.team%{_n}%::%{_match}%::*} is not set:
+			set {_t2::*} to {nutil.match.team%{_n}%::%{_match}%::*}
+			set {_map} to {nutil.match.map::%{_match}%}
+			set {_text} to "&6Inventories:"
+			set {_winner} to "&6Winner:&f"
+			loop {_t1::*}:
+				set {_uuid1::%loop-value%} to uuid of loop-value
+				set {nutil.match.inventory::%{_match}%::%loop-value%} to saveInventory(loop-value)
+				set {_text} to "%{_text}% <tooltip:&a%loop-value%'s inventory><run command:/inview %{_match}% %loop-value%>&a%loop-value%<reset>"
+				set {_winner} to "%{_winner}% %loop-value%"
+				add loop-value to {_all::*}
+			loop {_t2::*}:
+				set {_uuid2::%loop-value%} to uuid of loop-value
+				set {nutil.match.inventory::%{_match}%::%loop-value%} to saveInventory(loop-value)
+				set {_text} to "%{_text}% <tooltip:&c%loop-value%'s inventory><run command:/inview %{_match}% %loop-value%>&c%loop-value%<reset>"
+				add loop-value to {_all::*}
+			loop {nutil.match.spec::%{_match}%::*}:
+				add loop-value to {_all::*}
+			send "&7&m------------------------------------" to {_all::*}
+			send {_winner} to {_all::*}
+			send "%{_text}%" to {_all::*}
+			send "&7&m------------------------------------" to {_all::*}
+
+			delete {nutil.match.map::%{_match}%} and {nutil.match.stats::%{_match}%} and {nutil.match.block::%{_match}%::*} and {nutil.match.hit::%{_match}%::*}
+			delete {nutil.match.mapname::%{_match}%} and {nutil.match.win::%{_match}%::*}
+			delete {nutil.match.current.team1::%{_match}%::*} and {nutil.match.current.team2::%{_match}%::*}
+			delete {nutil.match.team1::%{_match}%::*} and {nutil.match.team2::%{_match}%::*}
+			loop {_all::*}:
+				set {_uuid} to uuid of loop-value
+				removeSpec(loop-value,{_match})
+				set {_type} to {nutil.player.%{_uuid}%::type}
+				set {_kit} to {nutil.player.%{_uuid}%::play}
+				delete {nutil.inmatch.%{nutil.player.%{_uuid}%::type}%.%{nutil.player.%{_uuid}%::play}%::%{_uuid}%}
+				delete {nutil.inmatch.list::%{_uuid}%}
+				delete {nutil.player.%{_uuid}%::*}
+				resetScoreboard(loop-value)
+
+			wait 10 tick
+			force {_all::*} to respawn
+			wait 1 tick
+			teleport {_all::*} to {nutil.location::lobby}
+			loop {_all::*}:
+				spawnitem(loop-value)
+				resetPlayer(loop-value)
+			wait 5 tick
+			execute console command "/swm unload %{_map}%"
+
+function sendMatch(t1: entities, t2: entities):
+
+	set {_firstuuid} to uuid of {_t1::1}
+	set {_matchnumber} to {nutil.player.%{_firstuuid}%::matchnumber}
+	loop {_t1::*}:
+		set {_uuid::%loop-value%} to uuid of loop-value
+		add loop-value to {_all::*}
+	loop {_t2::*}:
+		set {_uuid::%loop-value%} to uuid of loop-value
+		add loop-value to {_all::*}
+
+	if {nutil.player.%{_uuid::%{_t1::1}%}%::kit} is set:
+		set {_kit} to {nutil.player.%{_uuid::%{_t1::1}%}%::kit}
+	else:
+		set {_kit} to {nutil.player.%{_uuid::%{_t1::1}%}%::play}
+	set {_flag} to {nutil.kit.flag::%{_kit}%}
+	set {_maptype} to {nutil.kit.type::%{_kit}%}
+
+	if {nutil.match.round::%{_matchnumber}%} is not set:
+
+		loop {_t1::*}:
+			delete {nutil.player.%{_uuid::%loop-value%}%::duel}
+			set {nutil.player.%{_uuid::%loop-value%}%::team} to 1
+		loop {_t2::*}:
+			delete {nutil.player.%{_uuid::%loop-value%}%::duel}
+			set {nutil.player.%{_uuid::%loop-value%}%::team} to 2
+
+		loop {nutil.arena.list::*}:
+			if {nutil.arena.type::%loop-value%} is {_maptype}:
+				add loop-value to {_maps::*}
+		if {_maps::*} is set:
+			set {_pass.1} to true
+
+		if {_pass.1} is true:
+
+			send "&7&lアリーナを生成しますしばらくお待ちください..." to {_all::*}
+
+			if {nutil.player.%{_firstuuid}%::duelmap} is not set:
+				set {_r} to random integer between 1 and size of {_maps::*}
+				set {_mapname} to {_maps::%{_r}%}
+			else:
+				set {_mapname} to {nutil.player.%{_firstuuid}%::duelmap}
+				delete {nutil.player.%{_firstuuid}%::duelmap}
+
+			set {_map} to "map%random integer between 10000000 and 99999999%"
+			load template world "%{_map}%" from "%{_mapname}%"
+
+			add 1 to {nutil.match.number}
+			set {_matchnumber} to {nutil.match.number}
+
+			set {nutil.match.duration::%{_matchnumber}%} to 0
+			set {nutil.match.map::%{_matchnumber}%} to {_map}
+			set {nutil.match.mapname::%{_matchnumber}%} to {_mapname}
+			set {nutil.match.stats::%{_matchnumber}%} to true
+			set {nutil.match.round::%{_matchnumber}%} to 1
+			set {nutil.match.win::%{_matchnumber}%::1} and {nutil.match.win::%{_matchnumber}%::2} to 0
+			set {nutil.match.team1::%{_matchnumber}%::*} to {_t1::*}
+			set {nutil.match.team2::%{_matchnumber}%::*} to {_t2::*}
+
+			loop {_all::*}:
+				set {nutil.player.%{_uuid::%loop-value%}%::play} to {_kit}
+				set {nutil.player.%{_uuid::%loop-value%}%::matchnumber} to {_matchnumber}
+				set {nutil.player.%{_uuid::%loop-value%}%::type} to {nutil.player.%{_uuid::%loop-value%}%::queue}
+				set {nutil.inmatch.list::%{_uuid::%loop-value%}%} to now
+				set {nutil.inmatch.%{nutil.player.%{_uuid::%loop-value%}%::queue}%.%{nutil.player.%{_uuid::%loop-value%}%::kit}%::%{_uuid::%loop-value%}%} to now
+
+				delete {nutil.player.%{_uuid::%loop-value%}%::kit} and {nutil.player.%{_uuid::%loop-value%}%::queue}
+				delete {nutil.player.%{_uuid::%loop-value%}%::combattime} and {nutil.player.%{_uuid::%loop-value%}%::combat}
+
+		else:
+			send "&c使用可能なアリーナを見つけることができませんでした。" to {_all::*}
+			stop
+
+	else:
+		loop {nutil.match.block::%{_matchnumber}%::*}:
+			set block at loop-value to air
+		delete {nutil.match.block::%{_matchnumber}%::*}
+
+		set {_mapname} to {nutil.match.mapname::%{_matchnumber}%}
+		set {_map} to {nutil.match.map::%{_matchnumber}%}
+
+		add 1 to {nutil.match.round::%{_matchnumber}%}
+		
+		loop {_all::*}:
+			delete {nutil.player.%{_uuid::%loop-value%}%::start}
+
+	clear {_all::*}'s inventory
+
+	set {_spawn1} to {nutil.arena.spawn1::%{_mapname}%}
+	set {_spawn1} to change world {_spawn1} to {_map} parsed as world
+	set {_spawn2} to {nutil.arena.spawn2::%{_mapname}%}
+	set {_spawn2} to change world {_spawn2} to {_map} parsed as world
+
+	set {nutil.match.current.team1::%{_matchnumber}%::*} to {_t1::*}
+	set {nutil.matcdh.current.team2::%{_matchnumber}%::*} to {_t2::*}
+	set {nutil.match.hit::%{_matchnumber}%::1} and {nutil.match.hit::%{_matchnumber}%::2} to 0
+
+	set {_cnt} to 6
+	loop 7 times:
+		if {nutil.match.stats::%{_matchnumber}%} is set:
+			if {_cnt} is 6:
+
+				if {_pass.1} is true:
+					send "&7アリーナに転送します。 (Map: %{_mapname}%) Number: %{_matchnumber}%" to {_all::*}
+					wait 5 tick
+				else:
+					send "&7ラウンド %{nutil.match.round::%{_matchnumber}%}% を開始します。" to {_all::*}
+					play "LEVEL_UP" to {_all::*} at volume 1 with pitch 1
+
+					wait a tick
+					force {_all::*} to respawn
+					wait a tick
+
+				loop {_all::*}:
+					resetPlayer(loop-value-2)
+
+				teleport {_t1::*} to {_spawn1}
+				teleport {_t2::*} to {_spawn2}
+				wait a tick
+
+				if {_pass.1} is true:
+					send "&7対戦相手 %{_t1::1}% (%{_t1::1}'s ping%ms)" to {_t2::*}
+					send "&7対戦相手 %{_t2::1}% (%{_t2::1}'s ping%ms)" to {_t1::*}
+
+				loop {_all::*}:
+					set {_uuid} to uuid of loop-value-2
+					set slot 0 of loop-value-2 to book named "&eデフォルトを読み込む"
+					loop 8 times:
+						if {nutil.kiteditor.%{_uuid}%::%{_kit}%::%loop-value-3%} is set:
+							set slot loop-value-3 of loop-value-2's inventory to book named "&eLoad custom. &7[%loop-value-3%]"
+					resetScoreboard(loop-value-2)
+
+			else if {_cnt} > 1:
+				send "&f試合開始まで &b%{_cnt}% &f秒前..." to {_all::*}
+				play "CLICK" to {_all::*} at volume 1 with pitch 1
+
+			else if {_cnt} is 1:
+				send "&f試合開始まで &b%{_cnt}% &f秒前..." to {_all::*}
+				play "CLICK" to {_all::*} at volume 1 with pitch 1
+
+			else:
+				send "&a&l試合開始！" to {_all::*}
+				play "ORB_PICKUP" to {_all::*} at volume 1 with pitch 1
+				set {_start} to true
+
+				loop {_all::*}:
+					set {nutil.player.%{_uuid::%loop-value-2%}%::start} to now
+
+				if {_flag} does not contain "Combo":
+					loop {_all::*}:
+						set loop-value-2's maximum damage delay to 20
+				else:
+					loop {_all::*}:
+						set loop-value-2's maximum damage delay to 0
+
+				if {_pass.1} is true:
+					while {nutil.match.stats::%{_matchnumber}%} is true:
+						wait a second
+						add 1 to {nutil.match.duration::%{_matchnumber}%}
+
+			subtract 1 from {_cnt}
+			loop 20 times:
+				if {_flag} contains "Sumo" or "MLG" or "Bridge":
+					if {_start} is not set:
+						teleport {_t1::*} to {_spawn1}
+						teleport {_t2::*} to {_spawn2}
+				wait a tick
+		else:
+			exit loop
+
+
+on right click:
+	if {nutil.player.%player's uuid%::play} is set:
+		if event-item is book named "&eデフォルトを読み込む":
+			cancel event
+			loadInventory(player,{nutil.player.%player's uuid%::play})
+
+on damage:
+	if {nutil.player.%victim's uuid%::play} is set:
+		if {nutil.player.%victim's uuid%::start} is not set:
+			cancel event
+		else:
+			if attacker is a player:
+				if {nutil.player.%attacker's uuid%::start} is not set:
+					cancel event
+				set {_kit} to {nutil.player.%victim's uuid%::play}
+				if {nutil.kit.flag::%{_kit}%} contains "Sumo":
+					set damage to 0
+
+				if {nutil.kit.flag::%{_kit}%} contains "Counter":
+					set {_matchnumber} to {nutil.player.%attacker's uuid%::matchnumber}
+					set {_team} to {nutil.player.%attacker's uuid%::team}
+					if victim's damage delay <= 10:
+						add 1 to {nutil.match.hit::%{_matchnumber}%::%{_team}%}
+					if {nutil.match.hit::%{_matchnumber}%::%{_team}%} < 100:
+						set damage to 0
+					else:
+						kill victim
+					if victim's damage delay <= 10:
+						loop {nutil.match.team1::%{_matchnumber}%::*}:
+							refreshScoreboard(loop-value)
+						loop {nutil.match.team2::%{_matchnumber}%::*}:
+							refreshScoreboard(loop-value)
+
+on damage:
+	if "%damage cause%" is "projectile":
+		set {_kit} to {nutil.player.%victim's uuid%::play}
+		if {nutil.kit.flag::%{_kit}%} is "UHC":
+			send "&a%victim%'s health: &f%rounded victim's health * 2%&c❤" to attacker
+
+on death of player:
+	set death message to ""
+	set {_kit} to {nutil.player.%victim's uuid%::play}
+	if {nutil.kit.flag::%{_kit}%} contains "MLG" or "Bridge":
+		remove drops from drops
+	deathFunc(victim,attacker)
+
+on quit:
+	endMatchCalc(player,"quit")
+	wait a tick
+	delete {nutil.player.%player's uuid%::*}
+
+on heal:
+	if "%heal cause%" is "SATIATED" or "REGEN":
+		set {_kit} to {nutil.player.%player's uuid%::play}
+		if {nutil.kit.flag::%{_kit}%} is "UHC":
+			cancel event
+
+on block break:
+	if event-block is bed:
+		if {nutil.player.%player's uuid%::play} is "MLGRush":
+			cancel event
+			pointCalc(player,event-block)
+
+on any move:
+	if {nutil.player.%player's uuid%::start} is set:
+		if y coord of player <= 60:
+			kill player
+
+	if block at location of player is end portal:
+		if {nutil.player.%player's uuid%::start} is set:
+			pointCalc(player,block at location of player)
+
+on drop:
+	set {_kit} to {nutil.player.%player's uuid%::play}
+	if {nutil.kit.flag::%{_kit}%} contains "Bridge":
+		cancel event
+
+command /variables:
+	permission: admin
+	trigger:
+		loop {nutil.player.%player's uuid%::*}:
+			send "%loop-index%: %loop-value%"

@@ -1,0 +1,35 @@
+options:
+	prefix: &b[&enUtils&b]
+
+on load:
+	broadcast "{@prefix} &aSuccessfully loaded BowArrowAPI"
+
+on unload:
+	broadcast "{@prefix} &cUnloaded BowArrowAPI"
+
+on shoot:
+	set {_kit} to {nutil.player.%shooter's uuid%::play}
+	if {nutil.kit.flag::%{_kit}%} contains "Bridge":
+		set {_prog} to 1
+		loop 40 times:
+			set level progress of shooter to {_prog} - 0.01
+			set {_prog} to {_prog} - 0.025
+			if {nutil.player.%shooter's uuid%::play} is not set:
+				stop
+			wait 2 tick
+			if "%level progress of shooter%" is not "%{_prog} + 0.025 - 0.01%":
+				stop
+		if shooter does not have arrow:
+			give shooter an arrow
+
+on pick up:
+	set {_kit} to {nutil.player.%player's uuid%::play}
+	if {nutil.kit.flag::%{_kit}%} contains "Bridge":
+		if event-item is arrow:
+			cancel event
+
+on drop:
+	set {_kit} to {nutil.player.%player's uuid%::play}
+	if {nutil.kit.flag::%{_kit}%} contains "Bridge":
+		if event-item is arrow:
+			cancel event

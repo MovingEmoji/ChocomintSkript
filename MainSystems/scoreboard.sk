@@ -1,0 +1,165 @@
+options:
+	prefix: &b[&enUtils&b]
+
+on load:
+	broadcast "{@prefix} &aSuccessfully loaded ScoreboardAPI"
+
+on unload:
+	broadcast "{@prefix} &cUnloaded ScoreboardAPI"
+
+function calcWin(p: player) :: text:
+	set {_uuid} to uuid of {_p}
+	set {_kit} to {nutil.player.%{_uuid}%::play}
+	set {_round} to {nutil.kit.round::%{_kit}%}
+	set {_team} to {nutil.player.%{_uuid}%::team}
+	set {_matchnumber} to {nutil.player.%{_uuid}%::matchnumber}
+	set {_text} to ""
+	if {nutil.match.win::%{_matchnumber}%::%{_team}%} > 0:
+		loop {nutil.match.win::%{_matchnumber}%::%{_team}%} times:
+			set {_text} to "%{_text}%❖"
+	set {_text} to "%{_text}%&7"
+	loop {_round} - {nutil.match.win::%{_matchnumber}%::%{_team}%} times:
+		set {_text} to "%{_text}%❖"
+
+	return {_text}
+
+function createScoreboard(p: player):
+	create {_p}'s sidebar named "&a&lChocoMint"
+	set {_p}'s sidebar "&1&7&m----------" to "&7&m----" at line 7
+	set {_p}'s sidebar "&2Onlines&7: &f" to "%size of all players%" at line 6
+	set {_p}'s sidebar "&2InMatch&7: &f" to "%size of {nutil.inmatch.list::*}%" at line 5
+	set {_p}'s sidebar "&2" to "" at line 4
+	set {_p}'s sidebar "&2Combat&7: " to "&cFalse" at line 3
+	set {_p}'s sidebar "&1" to "" at line 2
+	set {_p}'s sidebar "&achocomint.cc" to "" at line 1
+	set {_p}'s sidebar "&7&m----------" to "&7&m----" at line 0
+
+function refreshScoreboard(p: player):
+	set {_uuid} to uuid of {_p}
+	if {nutil.player.%{_uuid}%::queue} is not set:
+		if {nutil.player.%{_uuid}%::play} is not set:
+			set {_p}'s sidebar "&1&7&m----------" to "&7&m----" at line 7
+			set {_p}'s sidebar "&2Onlines&7: &f" to "%size of all players%" at line 6
+			set {_p}'s sidebar "&2InMatch&7: &f" to "%size of {nutil.inmatch.list::*}%" at line 5
+			set {_p}'s sidebar "&2" to "" at line 4
+			if {nutil.player.%{_uuid}%::combat} is set:
+				set {_p}'s sidebar "&2Combat&7: " to "&aTrue" at line 3
+			else:
+				set {_p}'s sidebar "&2Combat&7: " to "&cFalse" at line 3
+			set {_p}'s sidebar "&1" to "" at line 2
+			set {_p}'s sidebar "&achocomint.cc" to "" at line 1
+			set {_p}'s sidebar "&7&m----------" to "&7&m----" at line 0
+		else if {nutil.player.%{_uuid}%::play} is set:
+			set {_matchnumber} to {nutil.player.%{_uuid}%::matchnumber}
+			if {nutil.player.%{_uuid}%::team} is 1:
+				set {_opponent} to {nutil.match.team2::%{_matchnumber}%::1}
+			else:
+				set {_opponent} to {nutil.match.team1::%{_matchnumber}%::1}
+			set {_duration} to {nutil.match.duration::%{_matchnumber}%}
+			set {_minute} to rounded down {_duration} / 60
+			set {_second} to mod({_duration},60)
+			if {_minute} < 10:
+				set {_minute} to "0%{_minute}%"
+			else:
+				set {_minute} to "%{_minute}%"
+			if {_second} < 10:
+				set {_duration} to "%{_minute}%:0%{_second}%"
+			else:
+				set {_duration} to "%{_minute}%:%{_second}%"
+			if {nutil.player.%{_uuid}%::play} is "Boxing":
+				set {_matchnumber} to {nutil.player.%{_uuid}%::matchnumber}
+				set {_ouuid} to uuid of {_opponent}
+				set {_p}'s sidebar "&1&7&m----------" to "&7&m----------" at line 8
+				set {_p}'s sidebar "&2Opponent&7: &f" to "%{_opponent}%" at line 7
+				set {_p}'s sidebar "&2Duration&7: &f" to "%{_duration}%" at line 6
+				set {_p}'s sidebar "&2" to "" at line 5
+				set {_p}'s sidebar "&aYourHits&7: " to "&f%{nutil.match.hit::%{_matchnumber}%::%{nutil.player.%{_uuid}%::team}%}% hits" at line 4
+				set {_p}'s sidebar "&cTheirHits&7: " to "&f%{nutil.match.hit::%{_matchnumber}%::%{nutil.player.%{_ouuid}%::team}%}% hits" at line 3
+				set {_p}'s sidebar "&1" to "" at line 2
+				set {_p}'s sidebar "&achocomint.cc" to "" at line 1
+				set {_p}'s sidebar "&7&m----------" to "&7&m----------" at line 0
+			else:
+				set {_kit} to  {nutil.player.%{_uuid}%::play}
+				if {nutil.kit.round::%{_kit}%} is 1:
+					set {_p}'s sidebar "&1&7&m----------" to "&7&m----------" at line 5
+					set {_p}'s sidebar "&2Opponent&7: &f" to "%{_opponent}%" at line 4
+					set {_p}'s sidebar "&2Duration&7: &f" to "%{_duration}%" at line 3
+					set {_p}'s sidebar "&1" to "" at line 2
+					set {_p}'s sidebar "&achocomint.cc" to "" at line 1
+					set {_p}'s sidebar "&7&m----------" to "&7&m----------" at line 0
+				else:
+					set {_p}'s sidebar "&1&7&m----------" to "&7&m----------" at line 8
+					set {_p}'s sidebar "&2Opponent&7: &f" to "%{_opponent}%" at line 7
+					set {_p}'s sidebar "&2Duration&7: &f" to "%{_duration}%" at line 6
+					set {_p}'s sidebar "&2" to "" at line 5
+					set {_p}'s sidebar "&aYou&7: &a" to "%calcWin({_p})%" at line 4
+					set {_p}'s sidebar "&cTheir&7: &c" to "%calcWin({_opponent})%" at line 3
+					set {_p}'s sidebar "&1" to "" at line 2
+					set {_p}'s sidebar "&achocomint.cc" to "" at line 1
+					set {_p}'s sidebar "&7&m----------" to "&7&m----------" at line 0
+	else if {nutil.player.%{_uuid}%::queue} is set:
+		set {_p}'s sidebar "&1&7&m----------" to "&7&m--------" at line 10
+		set {_p}'s sidebar "&2Onlines&7: &f" to "%size of all players%" at line 9
+		set {_p}'s sidebar "&2InMatch&7: &f" to "%size of {nutil.inmatch.list::*}%" at line 8
+		set {_p}'s sidebar "&3" to "" at line 7
+		if {nutil.player.%{_uuid}%::combat} is set:
+			set {_p}'s sidebar "&2Combat&7: " to "&aTrue" at line 6
+		else:
+			set {_p}'s sidebar "&2Combat&7: " to "&cFalse" at line 6
+		set {_p}'s sidebar "&2" to "" at line 5
+		set {_p}'s sidebar "&2Mode&7: &f" to "%{nutil.player.%{_uuid}%::queue}%" at line 4
+		set {_p}'s sidebar "&2Queue&7: &f" to "%{nutil.player.%{_uuid}%::kit}%" at line 3
+		set {_p}'s sidebar "&1" to "" at line 2
+		set {_p}'s sidebar "&achocomint.cc" to "" at line 1
+		set {_p}'s sidebar "&7&m----------" to "&7&m--------" at line 0
+
+function resetScoreboard(p: player):
+
+	reset {_p}'s sidebar "&1&7&m----------" at line 7
+	reset {_p}'s sidebar "&2Onlines&7: &f" at line 6
+	reset {_p}'s sidebar "&2InMatch&7: &f" at line 5
+	reset {_p}'s sidebar "&2" at line 4
+	reset {_p}'s sidebar "&2Combat&7: " at line 3
+	reset {_p}'s sidebar "&1" at line 2
+	reset {_p}'s sidebar "&achocomint.cc" at line 1
+	reset {_p}'s sidebar "&7&m----------" at line 0
+
+
+
+	reset {_p}'s sidebar "&1&7&m----------" at line 10
+	reset {_p}'s sidebar "&2Onlines&7: &f" at line 9
+	reset {_p}'s sidebar "&2InMatch&7: &f" at line 8
+	reset {_p}'s sidebar "&3" at line 7
+	reset {_p}'s sidebar "&2Combat&7: " at line 6
+	reset {_p}'s sidebar "&2" at line 5
+	reset {_p}'s sidebar "&2Mode&7: &f"  at line 4
+	reset {_p}'s sidebar "&2Queue&7: &f" at line 3
+
+
+
+	reset {_p}'s sidebar "&1&7&m----------" at line 5
+	reset {_p}'s sidebar "&2Opponent&7: &f" at line 4
+	reset {_p}'s sidebar "&2Duration&7: &f" at line 3
+
+
+
+	reset {_p}'s sidebar "&1&7&m----------" at line 8
+	reset {_p}'s sidebar "&2Opponent&7: &f" at line 7
+	reset {_p}'s sidebar "&2Duration&7: &f" at line 6
+	#reset {_p}'s sidebar "&2" at line 5
+	reset {_p}'s sidebar "&aYourHits&7: " at line 4
+	reset {_p}'s sidebar "&cTheirHits&7: " at line 3
+
+
+
+	reset {_p}'s sidebar "&aYou&7: &a" at line 4
+	reset {_p}'s sidebar "&cTheir&7: &c" at line 3
+
+	refreshScoreboard({_p})
+
+on join:
+	set player's scoreboard to new scoreboard
+	createScoreboard(player)
+	while player is online:
+		refreshScoreboard(player)
+		wait 5 tick

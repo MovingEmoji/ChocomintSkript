@@ -1,0 +1,72 @@
+options:
+	prefix: &b[&enUtils&b]
+	duel_name: &eにでゅえるをおくる
+
+on load:
+	broadcast "{@prefix} &aSuccessfully loaded DuelSystem"
+
+on unload:
+	broadcast "{@prefix} &cUnloaded DuelSystem"
+
+
+command /duel [<offline player>]:
+	trigger:
+		if arg-1 is set:
+			if arg-1 is online:
+				if player is not arg-1:
+					if {nutil.player.%player's uuid%::play} is not set:
+						openKit(player,"&e%arg-1% {@duel_name}","UnRanked")
+					else:
+						set {_error.inmatch} to true
+				else:
+					set {_error.yourself} to true
+			else:
+				set {_error.notonline} to true
+		if {_error.notonline} is set:
+			send "&cそのプレイヤーはオフラインです。"
+		else if {_error.yourself} is set:
+			send "&c自分自身にDUELを送ることはできません。"
+		else if {_error.inmatch} is set:
+			send "&c試合中にDUELを送ることはできません。"
+
+command /accept [<offline player>]:
+	trigger:
+		if arg-1 is set:
+			if arg-1 is online:
+				if {nutil.player.%player's uuid%::play} is not set:
+					if {nutil.player.%arg-1's uuid%::duel} contains "%player%":
+						leaveQueue(player)
+						leaveQueue(arg-1)
+						wait a tick
+						set {_duel::*} to {nutil.player.%arg-1's uuid%::duel} split at "//"
+						set {nutil.player.%player's uuid%::kit} and {nutil.player.%arg-1's uuid%::kit} to {_duel::2}
+						sendMatch(player,arg-1)
+					else:
+						set {_error.notplayer} to true
+				else:
+					set {_error.inmatch} to true
+			else:
+				set {_error.notonline} to true
+		if {_error.notonline} is set:
+			send "&cそのプレイヤーはオフラインです。"
+		else if {_error.inmatch} is set:
+			send "&c試合中にDUELを承諾することはできません。"
+		else if {_error.notplayer} is set:
+			send "&cそのプレイヤーからのDUEL申請は届いていません。"
+
+
+on inventory click:
+	if player's current inventory's name contains "{@duel_name}":
+		cancel event
+		if event-inventory is player's current inventory:
+			if event-item is not air:
+				set {_name} to event-item's name
+				replace "&b" with "" in {_name}
+				set {_p::*} to player's current inventory's name split at " "
+				replace "&e" with "" in {_p::1}
+				set {_p} to {_p::1} parsed as offline player
+				close player's inventory
+				send "&a%player% からでゅえるりくえすとが届きました。[Kit: %{_name}%]" to {_p}
+				send "&b/accept %player% &fと入力するか <tooltip:&bAccepted request><run command:/accept %player%>&b&l[ここクリックして承認]<reset>" to {_p}
+				set {nutil.player.%player's uuid%::duel} to "%{_p}%//%{_name}%"
+				send "&a%{_p}% にでゅえるりくえすとを送信しました。 [Kit: %{_name}%]" to player

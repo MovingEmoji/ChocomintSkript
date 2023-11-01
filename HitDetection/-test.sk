@@ -1,0 +1,18 @@
+every a tick:
+	loop all players:
+		loop players in radius 3.5 around loop-player:
+			if loop-player-2 is not loop-player-1:
+				set {_lp} to true
+				if distance between loop-player-2 and loop-player-1 <= 2:
+					set {_sp} to true
+		if {_lp} is set:
+			if {_sp} is not set:
+				set loop-player's maximum damage delay to 19
+				#send "True" to loop-player
+			else:
+				set loop-player's maximum damage delay to 18
+				#send "Extra" to loop-player
+		else:
+			set loop-player's maximum damage delay to 20
+			#send "False" to loop-player
+		delete {_lp} and {_sp}

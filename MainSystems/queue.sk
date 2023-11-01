@@ -1,0 +1,112 @@
+options:
+	prefix: &b[&enUtils&b]
+	unranked_name: "&bあんらんく きゅう"
+	ranked_name: "&cらんく きゅう"
+	queue_item: red dye named "&c&lりいぶきゅう"
+	ranked_list: UnRanked Ranked
+
+on load:
+	broadcast "{@prefix} &aSuccessfully loaded QueueLibrary"
+	loop {nutil.kit.list::*}:
+		set {_kit} to loop-value
+		set {_text} to "{@ranked_list}"
+		set {_ranked.list::*} to {_text} split at " "
+		loop {_ranked.list::*}:
+			delete {nutil.queue.%loop-value-2%.%{_kit}%::*}
+			delete {nutil.inmatch.%loop-value-2%.%{_kit}%::*}
+
+on unload:
+	broadcast "{@prefix} &cUnloaded QueueLibrary"
+
+function getKitName(kit: item) :: text:
+	set {_name} to name of {_kit}
+	replace "&b" with "" in {_name}
+	return {_name}
+
+function leaveQueue(p: player):
+	set {_uuid} to uuid of {_p}
+	if {nutil.player.%{_uuid}%::queue} is set:
+		set {_type} to {nutil.player.%{_uuid}%::queue}
+		set {_kit} to {nutil.player.%{_uuid}%::kit}
+		remove {_p} from {nutil.queue.%{_type}%.%{_kit}%::*}
+		delete {nutil.player.%{_uuid}%::queue} and {nutil.player.%{_uuid}%::kit} and {nutil.suffix.list::%{_uuid}%}
+		spawnitem({_p})
+		resetScoreboard({_p})
+		reloadSuffix({_p},"")
+
+function addQueue(p: player, type: text, kit: text):
+	set {_uuid} to uuid of {_p}
+	if {nutil.player.%{_uuid}%::queue} is set:
+		leaveQueue({_p})
+	set {nutil.player.%{_uuid}%::queue} to {_type}
+	set {nutil.player.%{_uuid}%::kit} to {_kit}
+	add {_p} to {nutil.queue.%{_type}%.%{_kit}%::*}
+	close {_p}'s inventory
+	clear {_p}'s inventory
+	set slot 0 of {_p}'s inventory to {@queue_item}
+	send "&b%{_type}% %{_kit}%のキューに参加しました。" to {_p}
+	resetScoreboard({_p})
+	reloadSuffix({_p},{nutil.suffix.list::%{_uuid}%})
+
+function setLore(inv: inventory, type: text) :: inventory:
+	set {_maxcnt} to size of {nutil.kit.list::*}
+	set {_slot} to 0
+	loop {_maxcnt} times:
+		set {_kit} to getKitName(slot {_slot} of {_inv})
+		set line 1 of slot {_slot} of {_inv}'s lore to "                     "		
+		set line 2 of slot {_slot} of {_inv}'s lore to "&2Queues&7: &f%size of {nutil.queue.%{_type}%.%{_kit}%::*}%"
+		set line 3 of slot {_slot} of {_inv}'s lore to "&2InMatch&7: &f%size of {nutil.inmatch.%{_type}%.%{_kit}%::*}%"
+		set line 4 of slot {_slot} of {_inv}'s lore to " "
+		set line 5 of slot {_slot} of {_inv}'s lore to "&7[click to queue]"
+		add 1 to {_slot}
+	return {_inv}
+
+		
+on right click:
+	if player's tool is getUnRankedItem():
+		cancel event
+		openKit(player,{@unranked_name},"UnRanked")
+	if player's tool is getRankedItem():
+		cancel event
+		openKit(player,{@ranked_name},"Ranked")
+	if player's tool is {@queue_item}:
+		leaveQueue(player)
+
+on inventory click:
+	if name of player's current inventory is {@unranked_name}:
+		cancel event
+		if event-inventory is player's current inventory:
+			if event-item is not air:
+				set {_name} to getKitName(event-item)
+				set {nutil.suffix.list::%player's uuid%} to "§7*§b%{_name}%"
+				addQueue(player,"UnRanked",{_name})
+	if name of player's current inventory is {@ranked_name}:
+		cancel event
+		if event-inventory is player's current inventory:
+			if event-item is not air:
+				set {_name} to getKitName(event-item)
+				set {nutil.suffix.list::%player's uuid%} to "§7*§c%{_name}%"
+				addQueue(player,"Ranked",{_name})
+
+on quit:
+	leaveQueue(player)
+
+every 3 seconds:
+	loop {nutil.kit.list::*}:
+		set {_kit} to loop-value
+		set {_text} to "{@ranked_list}"
+		set {_ranked.list::*} to {_text} split at " "
+		loop {_ranked.list::*}:
+			set {_type} to loop-value-2
+			loop {nutil.queue.%{_type}%.%{_kit}%::*}:
+				set {_p1} to loop-value-3
+				loop {nutil.queue.%{_type}%.%{_kit}%::*}:
+					if loop-value-4 is not {_p1}:
+						set {_p2} to loop-value-4
+						remove {_p1} and {_p2} from {nutil.queue.%{_type}%.%{_kit}%::*}
+						delete {nutil.suffix.list::%loop-value-3's uuid%} and {nutil.suffix.list::%loop-value-4's uuid%}
+						reloadSuffix({_p1},"")
+						reloadSuffix({_p2},"")
+						sendMatch({_p1},{_p2})
+						exit a loop
+				delete {_p1} and {_p2}
