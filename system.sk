@@ -1,0 +1,9 @@
+options:
+	prefix: &b[&enUtils&b]
+
+on load:
+	send "{@prefix} &7&m---------------------------------" to console
+	send "{@prefix} " to console
+	send "{@prefix}  &fWelcome to Chocomint Skript !" to console
+	send "{@prefix} " to console
+	send "{@prefix} &7&m---------------------------------" to console
