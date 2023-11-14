@@ -1,0 +1,10 @@
+options:
+	prefix: &b[&enUtils&b]
+	ja_aaa: てすと
+
+on load:
+	broadcast "{@prefix} &aSuccessfully loaded LanguageAPI"
+
+on unload:
+	broadcast "{@prefix} &cUnloaded LanguageAPI"
+

@@ -145,7 +145,7 @@ on right click on chest:
 on right click on end portal frame:
 	if {nutil.player.%player's uuid%::kitedit} is set:
 		cancel event
-		open chest with 3 rows named {@trash_name} for player
+		open chest inventory with 3 rows named {@trash_name} for player
 
 on consume:
 	if {nutil.player.%player's uuid%::kitedit} is set:

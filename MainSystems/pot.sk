@@ -11,7 +11,7 @@ on shoot:
 	if "%projectile%" is "thrown potion":
 		set {nutil.pot.tag::%projectile's uuid%} to true
 		set {_lc} to location of projectile
-		set {_lc} to location 0.12 above {_lc}
+		set {_lc} to location 0.10 above {_lc}
 		teleport projectile to {_lc}
 		set {_sv} to vector from yaw shooter's yaw and pitch shooter's pitch
 		set {_v} to vector from yaw shooter's yaw and pitch shooter's pitch
@@ -22,9 +22,13 @@ on shoot:
 		if vector length of {nutil.player.velocity::%shooter's uuid%} > 0.25:
 			if angle between {_sv} and {nutil.player.velocity::%shooter's uuid%} <= 18:
 				while {nutil.pot.tag::%projectile's uuid%} is set:
-					set {_v} to vector between projectile and shooter
-					teleport projectile to location 1 above shooter
+					set {_v} to normalized value of vector between projectile and shooter
+					set {_lc} to location of shooter
+					set y coord of {_lc} to y coord of {_lc} + 1
+					teleport projectile to {_lc}
 					set projectile's velocity to {_v}
+					loop players in shooter's world:
+						hide entity projectile from loop-player
 					wait a tick
 
 

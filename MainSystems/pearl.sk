@@ -17,6 +17,10 @@ on shoot:
 			if {_t} is set:
 				set {nutil.player.%shooter's uuid%::peral} to now
 				set {nutil.player.%shooter's uuid%::coolcount} to 15
+				set {_v} to projectile's velocity
+				set x of {_v} to x of {_v} * 1.2
+				set z of {_v} to z of {_v} * 1.2
+				set projectile's velocity to {_v}
 				while difference between {nutil.player.%shooter's uuid%::peral} and now <= 15 seconds:
 					set {_time} to difference between {nutil.player.%shooter's uuid%::peral} and now
 					set {_time} to "%difference between 15 seconds and {_time}%"

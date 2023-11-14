@@ -17,6 +17,6 @@ player velocity event:
 				delete {nutil.player.%player's uuid%::lastattack} and {nutil.player.%player's uuid%::damagecause}
 				set {_ag.uuid} to uuid of {_ag}
 				set {_v} to player's velocity
-				set x of {_v} to x of {_v} * 1.5
-				set z of {_v} to z of {_v} * 1.5
+				set x of {_v} to x of {_v} * 1.3
+				set z of {_v} to z of {_v} * 1.3
 				set player's velocity to {_v}
